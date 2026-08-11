@@ -24,6 +24,11 @@ export default function SetPasswordPage() {
       return;
     }
 
+    // No-op if it was already false (e.g. the invite-link flow rather than
+    // the admin-set-a-temporary-password flow) — clears the forced redirect
+    // in (app)/layout.tsx either way.
+    await supabase.rpc("clear_must_change_password");
+
     router.replace("/");
   }
 

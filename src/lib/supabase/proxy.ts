@@ -42,7 +42,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublicPath) {
+  // Only bounce authenticated users away from /login — NOT away from
+  // /auth/* (callback, set-password). Someone who just landed via an
+  // invite/recovery link IS "authenticated" (a temporary session) but still
+  // needs to reach /auth/set-password, not get redirected past it.
+  if (user && PUBLIC_PATHS.includes(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

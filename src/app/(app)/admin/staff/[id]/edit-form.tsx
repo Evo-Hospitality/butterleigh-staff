@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
-import { updateStaffAction, deleteStaffAction, sendInviteAction } from "./actions";
+import { updateStaffAction, deleteStaffAction, sendInviteAction, setTemporaryPasswordAction } from "./actions";
 
 const DAYS = [
   { value: 1, label: "Mon" },
@@ -19,25 +19,64 @@ export function EditStaffForm({ staff, managers }: { staff: Profile; managers: P
   const action = updateStaffAction.bind(null, staff.id);
   const deleteAction = deleteStaffAction.bind(null, staff.id);
   const inviteAction = sendInviteAction.bind(null, staff.id, staff.email);
+  const tempPasswordAction = setTemporaryPasswordAction.bind(null, staff.id);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   return (
     <>
-    <div className="mb-6 flex max-w-lg items-center justify-between rounded-md border border-border bg-muted px-4 py-3">
-      <div className="text-sm">
-        {staff.invited_at ? (
-          <>Invited {new Date(staff.invited_at).toLocaleDateString()}</>
-        ) : (
-          <span className="text-muted-foreground">Not invited yet — they can&apos;t log in</span>
-        )}
+    <div className="mb-6 max-w-lg rounded-md border border-border bg-muted px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm">
+          {staff.invited_at ? (
+            <>Invited {new Date(staff.invited_at).toLocaleDateString()}</>
+          ) : (
+            <span className="text-muted-foreground">Not invited yet — they can&apos;t log in</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPasswordForm((v) => !v)}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:border-accent"
+          >
+            Set password directly
+          </button>
+          <form action={inviteAction}>
+            <button
+              type="submit"
+              className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:border-accent"
+            >
+              {staff.invited_at ? "Resend invite" : "Send invite"}
+            </button>
+          </form>
+        </div>
       </div>
-      <form action={inviteAction}>
-        <button
-          type="submit"
-          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:border-accent"
-        >
-          {staff.invited_at ? "Resend invite" : "Send invite"}
-        </button>
-      </form>
+
+      {showPasswordForm && (
+        <form action={tempPasswordAction} className="mt-3 flex items-end gap-2 border-t border-border pt-3">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium">Temporary password</label>
+            <input
+              name="password"
+              type="text"
+              required
+              minLength={8}
+              placeholder="At least 8 characters"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Tell them this password another way (in person, by text). They&apos;ll be forced to
+              change it the moment they log in.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            Set
+          </button>
+        </form>
+      )}
     </div>
 
     <form action={action} className="flex max-w-lg flex-col gap-4">

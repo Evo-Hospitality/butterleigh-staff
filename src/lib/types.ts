@@ -15,6 +15,7 @@ export type Profile = {
   is_manager: boolean;
   active: boolean;
   invited_at: string | null;
+  must_change_password: boolean;
   created_at: string;
 };
 

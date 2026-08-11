@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { deleteStaff, sendStaffInvite } from "@/lib/holiday/staff";
+import { deleteStaff, sendStaffInvite, setTemporaryPassword } from "@/lib/holiday/staff";
 
 export async function updateStaffAction(staffId: string, formData: FormData) {
   const { supabase } = await requireAdmin();
@@ -52,6 +52,23 @@ export async function sendInviteAction(staffId: string, email: string) {
 
   await sendStaffInvite(email);
   await supabase.from("profiles").update({ invited_at: new Date().toISOString() }).eq("id", staffId);
+
+  revalidatePath(`/admin/staff/${staffId}`);
+}
+
+export async function setTemporaryPasswordAction(staffId: string, formData: FormData) {
+  const { supabase } = await requireAdmin();
+
+  const password = String(formData.get("password"));
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters.");
+  }
+
+  await setTemporaryPassword(staffId, password);
+  await supabase
+    .from("profiles")
+    .update({ must_change_password: true, invited_at: new Date().toISOString() })
+    .eq("id", staffId);
 
   revalidatePath(`/admin/staff/${staffId}`);
 }

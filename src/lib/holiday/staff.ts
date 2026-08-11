@@ -72,6 +72,19 @@ export async function sendStaffInvite(email: string) {
   }
 }
 
+// Sets a staff member's password directly — an alternative to emailing an
+// invite link, for when the admin will just tell them the password another
+// way (in person, by text). The account is immediately usable; the
+// must_change_password flag (set by the caller) forces them through
+// /auth/set-password on their next login before reaching anything else.
+export async function setTemporaryPassword(staffId: string, password: string) {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(staffId, { password });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 // Permanently removes a staff member and everything tied to them (their own
 // requests, balances, hours entries — via ON DELETE CASCADE). Anywhere else
 // they're referenced (manager_id, approver_id, entered_by on someone else's
