@@ -60,7 +60,12 @@ export async function deleteStaffAction(staffId: string) {
     fail(staffId, "You can't delete your own account.");
   }
 
-  await deleteStaff(staffId);
+  try {
+    await deleteStaff(staffId);
+  } catch (err) {
+    fail(staffId, err instanceof Error ? err.message : "Failed to delete staff member.");
+  }
+
   redirect("/admin/staff");
 }
 
