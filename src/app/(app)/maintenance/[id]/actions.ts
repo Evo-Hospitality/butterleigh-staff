@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireMaintenanceAccess } from "@/lib/auth";
+import { requireAdmin, requireMaintenanceAccess } from "@/lib/auth";
 import { notifyMaintenanceUpdate, notifyMaintenanceAssigned } from "@/lib/maintenance/notifications";
+import { deleteMaintenancePhoto } from "@/lib/maintenance/storage";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { MaintenanceRequest } from "@/lib/types";
 
 function fail(id: string, message: string): never {
@@ -130,4 +132,35 @@ export async function setStatusAction(requestId: string, status: "open" | "close
     await notifyMaintenanceUpdate(request.submitted_by, requestId, request.title, profile.full_name, note);
   }
   revalidatePath(`/maintenance/${requestId}`);
+}
+
+// Admin-only, and only for closed requests — uses the service-role client so
+// it can also remove the photo from storage, which regular RLS-scoped
+// sessions have no delete policy for.
+export async function deleteRequestAction(requestId: string) {
+  await requireAdmin();
+
+  const admin = createAdminClient();
+  const { data: request } = await admin
+    .from("maintenance_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single<MaintenanceRequest>();
+  if (!request) {
+    fail(requestId, "Request not found.");
+  }
+  if (request.status !== "closed") {
+    fail(requestId, "Only closed requests can be deleted.");
+  }
+
+  if (request.photo_url) {
+    await deleteMaintenancePhoto(request.photo_url);
+  }
+
+  const { error } = await admin.from("maintenance_requests").delete().eq("id", requestId);
+  if (error) {
+    fail(requestId, error.message);
+  }
+
+  redirect("/maintenance");
 }

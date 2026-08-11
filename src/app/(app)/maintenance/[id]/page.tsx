@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMaintenanceAccess } from "@/lib/auth";
 import { canAccessMaintenance, type MaintenanceRequest, type MaintenanceUpdateEntry, type Profile } from "@/lib/types";
-import { addNoteAction, reassignAction, setStatusAction } from "./actions";
+import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
+import { DeleteRequestButton } from "./delete-button";
 
 function StatusBadge({ status }: { status: string }) {
   const style = status === "open" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
@@ -57,6 +58,8 @@ export default async function MaintenanceDetailPage({
   const reopenAction = setStatusAction.bind(null, id, "open");
   const noteAction = addNoteAction.bind(null, id);
   const reassignBound = reassignAction.bind(null, id);
+  const deleteBound = deleteRequestAction.bind(null, id);
+  const canDelete = profile.role === "admin" && request.status === "closed";
 
   return (
     <div>
@@ -152,6 +155,12 @@ export default async function MaintenanceDetailPage({
           <p className="text-sm text-muted-foreground">No updates yet.</p>
         )}
       </div>
+
+      {canDelete && (
+        <div className="mt-8 max-w-lg">
+          <DeleteRequestButton title={request.title} action={deleteBound} />
+        </div>
+      )}
     </div>
   );
 }

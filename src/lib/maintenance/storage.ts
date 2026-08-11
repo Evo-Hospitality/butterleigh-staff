@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
@@ -30,4 +31,15 @@ export async function uploadMaintenancePhoto(supabase: SupabaseClient, file: Fil
 
   const { data } = supabase.storage.from("maintenance-photos").getPublicUrl(path);
   return data.publicUrl;
+}
+
+// Deleting is an admin-only, service-role operation (see deleteRequestAction)
+// so it uses the admin client rather than the caller's own — there's no
+// per-user storage delete policy on this bucket.
+export async function deleteMaintenancePhoto(photoUrl: string): Promise<void> {
+  const path = photoUrl.split("/maintenance-photos/")[1];
+  if (!path) return;
+
+  const admin = createAdminClient();
+  await admin.storage.from("maintenance-photos").remove([path]);
 }
