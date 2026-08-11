@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMaintenanceAccess } from "@/lib/auth";
-import { canAccessMaintenance, type MaintenanceRequest, type MaintenanceUpdateEntry, type Profile } from "@/lib/types";
+import { canBeAssignedMaintenance, type MaintenanceRequest, type MaintenanceUpdateEntry, type Profile } from "@/lib/types";
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
 
@@ -51,7 +51,7 @@ export default async function MaintenanceDetailPage({
       .eq("active", true)
       .order("full_name")
       .returns<Profile[]>();
-    assignees = (data ?? []).filter((a) => canAccessMaintenance(a) && a.id !== request.assigned_to);
+    assignees = (data ?? []).filter((a) => canBeAssignedMaintenance(a) && a.id !== request.assigned_to);
   }
 
   const closeAction = setStatusAction.bind(null, id, "closed");

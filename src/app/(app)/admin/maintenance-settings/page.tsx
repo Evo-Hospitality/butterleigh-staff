@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
-import { canAccessMaintenance, type Profile } from "@/lib/types";
+import { canBeAssignedMaintenance, type Profile } from "@/lib/types";
 import { saveMaintenanceSettingsAction } from "./actions";
 
 export default async function MaintenanceSettingsPage() {
@@ -14,7 +14,7 @@ export default async function MaintenanceSettingsPage() {
       .order("full_name")
       .returns<Profile[]>(),
   ]);
-  const staff = (allStaff ?? []).filter(canAccessMaintenance);
+  const staff = (allStaff ?? []).filter(canBeAssignedMaintenance);
 
   return (
     <div>

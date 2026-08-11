@@ -1,5 +1,5 @@
 import { requireMaintenanceAccess } from "@/lib/auth";
-import { canAccessMaintenance, type Profile } from "@/lib/types";
+import { canBeAssignedMaintenance, type Profile } from "@/lib/types";
 import { createMaintenanceRequestAction } from "./actions";
 
 export default async function NewMaintenanceRequestPage({
@@ -18,7 +18,7 @@ export default async function NewMaintenanceRequestPage({
       .eq("active", true)
       .order("full_name")
       .returns<Profile[]>();
-    assignees = (data ?? []).filter(canAccessMaintenance);
+    assignees = (data ?? []).filter(canBeAssignedMaintenance);
   }
 
   return (

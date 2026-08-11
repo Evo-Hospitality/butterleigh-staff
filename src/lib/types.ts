@@ -28,6 +28,14 @@ export function canAccessMaintenance(profile: Profile): boolean {
   return profile.has_maintenance_access || profile.role === "admin" || profile.is_manager;
 }
 
+// Who a request can be routed TO — deliberately narrower than who can
+// access the app. Anyone with maintenance access can see the shared log,
+// but only admins/managers are the "someone should own fixing this" people
+// that raisers pick from in Assign to / Reassign to.
+export function canBeAssignedMaintenance(profile: Profile): boolean {
+  return profile.role === "admin" || profile.is_manager;
+}
+
 export type LeaveBalance = {
   id: string;
   staff_id: string;
