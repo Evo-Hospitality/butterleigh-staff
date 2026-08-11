@@ -164,7 +164,7 @@ export function StaffForm({ managers }: { managers: Profile[] }) {
       </div>
 
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="has_maintenance_access" />
+        <input type="checkbox" name="has_maintenance_access" defaultChecked />
         Has access to the Maintenance app
       </label>
 

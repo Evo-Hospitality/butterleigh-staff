@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { notifySopQuestionAsked } from "@/lib/sops/notifications";
 
 function fail(message: string): never {
   redirect(`/sops/ask?error=${encodeURIComponent(message)}`);
@@ -30,8 +29,6 @@ export async function askQuestionAction(formData: FormData) {
   if (error || !entry) {
     fail(error?.message ?? "Failed to submit your question.");
   }
-
-  await notifySopQuestionAsked(entry.id, title, profile.full_name);
 
   redirect(`/sops/${entry.id}`);
 }

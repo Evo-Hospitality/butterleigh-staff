@@ -28,29 +28,9 @@ async function emailFor(profileId: string): Promise<string | null> {
   return data?.email ?? null;
 }
 
-async function adminAndManagerEmails(): Promise<string[]> {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("profiles")
-    .select("email")
-    .eq("active", true)
-    .or("role.eq.admin,is_manager.eq.true");
-  return (data ?? []).map((p) => p.email);
-}
-
-// New question asked — heads-up to the whole admin/manager pool, since it's
-// a shared queue rather than routed to one person.
-export async function notifySopQuestionAsked(entryId: string, title: string, askerName: string) {
-  const emails = await adminAndManagerEmails();
-
-  await send(
-    emails,
-    "New SOP question awaiting an answer",
-    `<p><strong>${escapeHtml(askerName)}</strong> asked a question that needs an answer: <strong>${escapeHtml(title)}</strong>.</p>
-     <p><a href="${SITE_URL}/sops/${entryId}">Answer it</a></p>`,
-  );
-}
-
+// New questions deliberately don't email the admin/manager group — they
+// show up in the "Unanswered questions" queue on /sops instead, which is
+// enough without turning every question into a group email blast.
 export async function notifySopAnswered(askerId: string, entryId: string, title: string, answeredByName: string) {
   const email = await emailFor(askerId);
   if (!email) return;
