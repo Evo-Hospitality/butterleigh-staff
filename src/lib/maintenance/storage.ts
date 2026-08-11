@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_SIZE = 15 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
 
 // Uploads to the public "maintenance-photos" bucket under a random path —
@@ -16,7 +16,7 @@ export async function uploadMaintenancePhoto(supabase: SupabaseClient, file: Fil
     throw new Error("Photo must be a JPEG, PNG, WEBP, GIF, or HEIC image.");
   }
   if (file.size > MAX_SIZE) {
-    throw new Error("Photo must be under 5MB.");
+    throw new Error("Photo must be under 15MB.");
   }
 
   const ext = file.name.split(".").pop() || "jpg";

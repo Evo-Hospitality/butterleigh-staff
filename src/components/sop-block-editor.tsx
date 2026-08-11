@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_SIZE = 15 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
 
 type TextBlock = { localId: string; kind: "text"; body: string };
@@ -84,7 +84,7 @@ export function SopBlockEditor({
       return;
     }
     if (file.size > MAX_SIZE) {
-      updateBlock(localId, { status: "error", error: "Photo must be under 5MB." });
+      updateBlock(localId, { status: "error", error: "Photo must be under 15MB." });
       return;
     }
 

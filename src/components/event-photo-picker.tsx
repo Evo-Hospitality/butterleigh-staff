@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_SIZE = 15 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
 
 type Photo = {
@@ -52,7 +52,7 @@ export function EventPhotoPicker({ onPendingChange }: { onPendingChange?: (pendi
       return;
     }
     if (file.size > MAX_SIZE) {
-      updatePhoto(localId, { status: "error", error: "Photo must be under 5MB." });
+      updatePhoto(localId, { status: "error", error: "Photo must be under 15MB." });
       return;
     }
 
