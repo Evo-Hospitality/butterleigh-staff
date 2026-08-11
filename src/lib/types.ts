@@ -21,20 +21,25 @@ export type Profile = {
   created_at: string;
 };
 
+// The "owns this, can act on it" fallback pattern used across every
+// mini-app — admins always qualify, managers always qualify, matching the
+// admin/manager-only SQL functions (can_manage_sops(), etc.).
+export function isManagerOrAdmin(profile: Profile): boolean {
+  return profile.role === "admin" || profile.is_manager;
+}
+
 // Admins and managers have implicit access (same fallback pattern used
 // throughout — the per-person flag is what an admin opts regular staff into,
 // not a boundary admins/managers themselves are subject to).
 export function canAccessMaintenance(profile: Profile): boolean {
-  return profile.has_maintenance_access || profile.role === "admin" || profile.is_manager;
+  return profile.has_maintenance_access || isManagerOrAdmin(profile);
 }
 
 // Who a request can be routed TO — deliberately narrower than who can
 // access the app. Anyone with maintenance access can see the shared log,
 // but only admins/managers are the "someone should own fixing this" people
 // that raisers pick from in Assign to / Reassign to.
-export function canBeAssignedMaintenance(profile: Profile): boolean {
-  return profile.role === "admin" || profile.is_manager;
-}
+export const canBeAssignedMaintenance = isManagerOrAdmin;
 
 export type LeaveBalance = {
   id: string;
@@ -123,5 +128,31 @@ export type MaintenanceUpdateEntry = {
   author_name: string;
   kind: MaintenanceUpdateKind;
   note: string;
+  created_at: string;
+};
+
+export type SopStatus = "unanswered" | "answered";
+export type SopBlockKind = "text" | "photo" | "link";
+
+export type SopEntry = {
+  id: string;
+  title: string;
+  asked_by: string | null;
+  asked_by_name: string | null;
+  status: SopStatus;
+  answered_by: string | null;
+  answered_by_name: string | null;
+  created_at: string;
+  answered_at: string | null;
+};
+
+export type SopBlock = {
+  id: string;
+  entry_id: string;
+  kind: SopBlockKind;
+  sort_order: number;
+  body: string | null;
+  url: string | null;
+  caption: string | null;
   created_at: string;
 };

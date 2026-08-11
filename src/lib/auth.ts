@@ -2,7 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { canAccessMaintenance, type Profile } from "@/lib/types";
+import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
 // Centralizes "who is the current user, and what can they do". Server
 // Components/Actions use this for UX (hiding admin-only buttons, redirecting
@@ -53,6 +53,16 @@ export async function requireMaintenanceAccess() {
   const result = await requireUser();
   if (!canAccessMaintenance(result.profile)) {
     redirect("/");
+  }
+  return result;
+}
+
+// Answering SOP questions / authoring one directly — same admin-or-manager
+// fallback used by can_manage_sops() in RLS.
+export async function requireSopManage() {
+  const result = await requireUser();
+  if (!isManagerOrAdmin(result.profile)) {
+    redirect("/sops");
   }
   return result;
 }

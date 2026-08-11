@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Wrench } from "lucide-react";
+import { BookOpenText, CalendarDays, Wrench } from "lucide-react";
 import { canAccessMaintenance, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -17,6 +17,13 @@ const TILES = [
     description: "Report an issue and track progress until it's fixed",
     icon: Wrench,
     show: canAccessMaintenance,
+  },
+  {
+    href: "/sops",
+    label: "SOPs & FAQs",
+    description: "Ask a question or search how something's meant to be done",
+    icon: BookOpenText,
+    show: (_profile: Profile) => true,
   },
 ];
 

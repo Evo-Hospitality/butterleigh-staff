@@ -18,6 +18,9 @@ export function Nav({ profile }: { profile: Profile }) {
           <Link href="/holiday" className="hover:text-accent">
             Holiday
           </Link>
+          <Link href="/sops" className="hover:text-accent">
+            SOPs
+          </Link>
           {canAccessMaintenance && (
             <Link href="/maintenance" className="hover:text-accent">
               Maintenance
