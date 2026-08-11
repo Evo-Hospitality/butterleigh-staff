@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isManagerOrAdmin, type EventSuggestion, type EventSuggestionPhoto } from "@/lib/types";
-import { decideAction } from "./actions";
+import { decideAction, deleteSuggestionAction } from "./actions";
+import { DeleteSuggestionButton } from "./delete-button";
 
 function StatusBadge({ status }: { status: string }) {
   const style =
@@ -42,6 +43,7 @@ export default async function EventSuggestionDetailPage({
   const canManage = isManagerOrAdmin(profile);
   const approveAction = decideAction.bind(null, id, "approved");
   const declineAction = decideAction.bind(null, id, "declined");
+  const deleteBound = deleteSuggestionAction.bind(null, id);
 
   return (
     <div>
@@ -120,6 +122,12 @@ export default async function EventSuggestionDetailPage({
               Decline
             </button>
           </form>
+        </div>
+      )}
+
+      {profile.role === "admin" && (
+        <div className="mt-8 max-w-lg">
+          <DeleteSuggestionButton title={suggestion.title} action={deleteBound} />
         </div>
       )}
     </div>

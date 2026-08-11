@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireEventsManage } from "@/lib/auth";
+import { requireAdmin, requireEventsManage } from "@/lib/auth";
 import { notifySuggestionDecided } from "@/lib/events/notifications";
+import { deleteEventPhotos } from "@/lib/events/photos";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { EventSuggestion } from "@/lib/types";
 
 function fail(id: string, message: string): never {
@@ -53,4 +55,30 @@ export async function decideAction(
   }
 
   redirect(`/events/${suggestionId}`);
+}
+
+// Admin-only. Uses the service-role client so it can also remove the
+// photos from storage, which regular RLS-scoped sessions have no delete
+// policy for — same pattern as Maintenance's deleteRequestAction, except
+// not restricted to any particular status (an idea board has no "still
+// active work" to protect the way an open maintenance request does).
+export async function deleteSuggestionAction(suggestionId: string) {
+  await requireAdmin();
+
+  const admin = createAdminClient();
+  const { data: photos } = await admin
+    .from("event_suggestion_photos")
+    .select("url")
+    .eq("suggestion_id", suggestionId);
+
+  if (photos && photos.length > 0) {
+    await deleteEventPhotos(photos.map((p) => p.url));
+  }
+
+  const { error } = await admin.from("event_suggestions").delete().eq("id", suggestionId);
+  if (error) {
+    fail(suggestionId, error.message);
+  }
+
+  redirect("/events");
 }

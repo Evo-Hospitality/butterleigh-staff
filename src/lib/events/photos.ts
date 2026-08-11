@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // What the photo picker serializes into the hidden "photos_json" field —
 // each photo is already uploaded to storage by the time this arrives (see
@@ -54,4 +55,17 @@ export async function insertPhotos(supabase: SupabaseClient, suggestionId: strin
   if (error) {
     throw new Error(error.message);
   }
+}
+
+// Deleting is an admin-only, service-role operation (see deleteSuggestionAction)
+// so it uses the admin client rather than the caller's own — there's no
+// per-user storage delete policy on this bucket.
+export async function deleteEventPhotos(photoUrls: string[]): Promise<void> {
+  const paths = photoUrls
+    .map((url) => url.split("/event-photos/")[1])
+    .filter((path): path is string => !!path);
+  if (paths.length === 0) return;
+
+  const admin = createAdminClient();
+  await admin.storage.from("event-photos").remove(paths);
 }
