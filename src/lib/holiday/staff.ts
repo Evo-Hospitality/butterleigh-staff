@@ -1,0 +1,76 @@
+import "server-only";
+
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import type { EmploymentType } from "@/lib/types";
+
+export type CreateStaffInput = {
+  email: string;
+  fullName: string;
+  role: "staff" | "admin";
+  employmentType: EmploymentType;
+  workingDays: number[];
+  contractedHoursPerWeek: number | null;
+  annualAllowanceDays: number | null;
+  managerId: string | null;
+  isManager: boolean;
+};
+
+// Creates the auth user (and, via the handle_new_user() trigger in
+// 0001_init.sql, their matching `profiles` row) WITHOUT sending any email —
+// lets an admin set someone up in advance. Call sendStaffInvite separately,
+// whenever they're actually ready to invite the person to log in.
+export async function createStaff(input: CreateStaffInput) {
+  const admin = createAdminClient();
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email: input.email,
+    email_confirm: true,
+    user_metadata: {
+      full_name: input.fullName,
+      role: input.role,
+      employment_type: input.employmentType,
+      working_days: input.workingDays,
+      contracted_hours_per_week: input.contractedHoursPerWeek,
+      annual_allowance_days: input.annualAllowanceDays,
+      manager_id: input.managerId,
+      is_manager: input.isManager,
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data.user;
+}
+
+// Emails the staff member a link to set their password and log in for the
+// first time — safe to call again later to resend/re-invite. Supabase
+// doesn't have a separate "invite an already-created user" email, so this
+// reuses the password-reset flow, which does exactly the same job.
+export async function sendStaffInvite(email: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/auth/set-password`,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+// Permanently removes a staff member and everything tied to them (their own
+// requests, balances, hours entries — via ON DELETE CASCADE). Anywhere else
+// they're referenced (manager_id, approver_id, entered_by on someone else's
+// row) degrades gracefully to null rather than blocking the delete — see
+// 0003_delete_cascades.sql. Intended for dummy/test data or hires that never
+// started; for a real leaver, deactivate them instead (keeps their history).
+export async function deleteStaff(staffId: string) {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(staffId);
+  if (error) {
+    throw new Error(error.message);
+  }
+}
