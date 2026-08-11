@@ -1,11 +1,11 @@
 import Link from "next/link";
-import type { Profile } from "@/lib/types";
+import { canAccessMaintenance as canAccessMaintenanceCheck, type Profile } from "@/lib/types";
 import { signOut } from "@/app/(app)/actions";
 import { Logo } from "./logo";
 
 export function Nav({ profile }: { profile: Profile }) {
   const canApprove = profile.is_manager || profile.role === "admin";
-  const canAccessMaintenance = profile.has_maintenance_access || profile.role === "admin";
+  const canAccessMaintenance = canAccessMaintenanceCheck(profile);
 
   return (
     <header className="border-b border-border bg-primary text-primary-foreground">

@@ -21,6 +21,13 @@ export type Profile = {
   created_at: string;
 };
 
+// Admins and managers have implicit access (same fallback pattern used
+// throughout — the per-person flag is what an admin opts regular staff into,
+// not a boundary admins/managers themselves are subject to).
+export function canAccessMaintenance(profile: Profile): boolean {
+  return profile.has_maintenance_access || profile.role === "admin" || profile.is_manager;
+}
+
 export type LeaveBalance = {
   id: string;
   staff_id: string;

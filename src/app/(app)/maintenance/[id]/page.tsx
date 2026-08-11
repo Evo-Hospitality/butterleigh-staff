@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMaintenanceAccess } from "@/lib/auth";
-import type { MaintenanceRequest, MaintenanceUpdateEntry, Profile } from "@/lib/types";
+import { canAccessMaintenance, type MaintenanceRequest, type MaintenanceUpdateEntry, type Profile } from "@/lib/types";
 import { addNoteAction, reassignAction, setStatusAction } from "./actions";
 
 function StatusBadge({ status }: { status: string }) {
@@ -48,10 +48,9 @@ export default async function MaintenanceDetailPage({
       .from("profiles")
       .select("*")
       .eq("active", true)
-      .or("has_maintenance_access.eq.true,role.eq.admin")
       .order("full_name")
       .returns<Profile[]>();
-    assignees = (data ?? []).filter((a) => a.id !== request.assigned_to);
+    assignees = (data ?? []).filter((a) => canAccessMaintenance(a) && a.id !== request.assigned_to);
   }
 
   const closeAction = setStatusAction.bind(null, id, "closed");

@@ -1,5 +1,5 @@
 import { requireMaintenanceAccess } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+import { canAccessMaintenance, type Profile } from "@/lib/types";
 import { createMaintenanceRequestAction } from "./actions";
 
 export default async function NewMaintenanceRequestPage({
@@ -16,10 +16,9 @@ export default async function NewMaintenanceRequestPage({
       .from("profiles")
       .select("*")
       .eq("active", true)
-      .or("has_maintenance_access.eq.true,role.eq.admin")
       .order("full_name")
       .returns<Profile[]>();
-    assignees = data ?? [];
+    assignees = (data ?? []).filter(canAccessMaintenance);
   }
 
   return (
@@ -56,7 +55,12 @@ export default async function NewMaintenanceRequestPage({
 
         <div>
           <label className="mb-1 block text-sm font-medium">Photo (optional)</label>
-          <input type="file" name="photo" accept="image/*" className="w-full text-sm" />
+          <input
+            type="file"
+            name="photo"
+            accept="image/*"
+            className="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-white file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary hover:file:border-accent hover:file:text-accent"
+          />
         </div>
 
         {profile.role === "admin" && (

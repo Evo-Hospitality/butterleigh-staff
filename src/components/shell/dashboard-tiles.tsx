@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CalendarDays, Wrench } from "lucide-react";
-import type { Profile } from "@/lib/types";
+import { canAccessMaintenance, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
 const TILES = [
@@ -16,7 +16,7 @@ const TILES = [
     label: "Maintenance",
     description: "Report an issue and track progress until it's fixed",
     icon: Wrench,
-    show: (profile: Profile) => profile.has_maintenance_access || profile.role === "admin",
+    show: canAccessMaintenance,
   },
 ];
 
