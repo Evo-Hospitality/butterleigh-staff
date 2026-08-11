@@ -1,7 +1,7 @@
 import "server-only";
 
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import type { EmploymentType } from "@/lib/types";
 
 export type CreateStaffInput = {
@@ -49,8 +49,19 @@ export async function createStaff(input: CreateStaffInput) {
 // first time — safe to call again later to resend/re-invite. Supabase
 // doesn't have a separate "invite an already-created user" email, so this
 // reuses the password-reset flow, which does exactly the same job.
+//
+// Deliberately NOT our cookie-based @supabase/ssr server client: that
+// client defaults to PKCE, which ties the emailed link to a code_verifier
+// stored in *our* (the admin's) cookies — useless to the staff member
+// opening the link on a different device entirely. A plain client forced to
+// the implicit flow produces a self-contained link (the session tokens ride
+// along in the URL) that works no matter who opens it or where.
 export async function sendStaffInvite(email: string) {
-  const supabase = await createClient();
+  const supabase = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { flowType: "implicit", autoRefreshToken: false, persistSession: false } },
+  );
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/auth/set-password`,
