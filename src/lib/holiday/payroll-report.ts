@@ -9,7 +9,8 @@ export type PayrollReportRow = {
   employmentType: "salaried" | "hourly";
   hoursWorkedThisMonth: number | null; // hourly only
   accruedThisMonth: number | null; // hourly only
-  holidayTakenThisMonth: number; // days (salaried) or hours (hourly)
+  holidayTakenThisMonth: number; // paid holiday only — days (salaried) or hours (hourly)
+  unpaidLeaveThisMonth: number; // salaried only, days — deduct pay for these, not holiday balance
   lieuEarnedThisMonth: number; // salaried only, count of days
   remainingBalance: number;
   unit: "days" | "hours";
@@ -42,8 +43,16 @@ export async function buildPayrollReport(
     const balance = balanceByStaff.get(person.id);
     const hoursEntry = hoursByStaff.get(person.id);
 
-    const holidayTakenThisMonth = (leave ?? [])
-      .filter((r) => r.staff_id === person.id && inMonth(r.start_date, year, month))
+    const requestsThisMonth = (leave ?? []).filter(
+      (r) => r.staff_id === person.id && inMonth(r.start_date, year, month),
+    );
+
+    const holidayTakenThisMonth = requestsThisMonth
+      .filter((r) => !r.is_unpaid)
+      .reduce((sum, r) => sum + Number(r.amount), 0);
+
+    const unpaidLeaveThisMonth = requestsThisMonth
+      .filter((r) => r.is_unpaid)
       .reduce((sum, r) => sum + Number(r.amount), 0);
 
     const lieuEarnedThisMonth = (lieu ?? []).filter(
@@ -64,6 +73,7 @@ export async function buildPayrollReport(
       hoursWorkedThisMonth: isSalaried ? null : (hoursEntry?.hours_worked ?? 0),
       accruedThisMonth: isSalaried ? null : (hoursEntry?.hours_worked ?? 0) * 0.1207,
       holidayTakenThisMonth,
+      unpaidLeaveThisMonth: isSalaried ? unpaidLeaveThisMonth : 0,
       lieuEarnedThisMonth: isSalaried ? lieuEarnedThisMonth : 0,
       remainingBalance,
       unit: isSalaried ? "days" : "hours",
@@ -78,6 +88,7 @@ export function payrollReportToCsv(rows: PayrollReportRow[], year: number, month
     `Hours worked (${month}/${year})`,
     "Accrued this month (hrs)",
     "Holiday taken this month",
+    "Unpaid leave this month (days)",
     "Lieu days earned this month",
     "Remaining balance",
     "Unit",
@@ -93,6 +104,7 @@ export function payrollReportToCsv(rows: PayrollReportRow[], year: number, month
         row.hoursWorkedThisMonth ?? "",
         row.accruedThisMonth?.toFixed(2) ?? "",
         row.holidayTakenThisMonth,
+        row.unpaidLeaveThisMonth,
         row.lieuEarnedThisMonth,
         row.remainingBalance.toFixed(2),
         row.unit,

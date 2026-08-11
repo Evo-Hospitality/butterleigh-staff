@@ -5,6 +5,10 @@ import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { deleteStaff, sendStaffInvite, setTemporaryPassword } from "@/lib/holiday/staff";
 
+function fail(staffId: string, message: string): never {
+  redirect(`/admin/staff/${staffId}?error=${encodeURIComponent(message)}`);
+}
+
 export async function updateStaffAction(staffId: string, formData: FormData) {
   const { supabase } = await requireAdmin();
 
@@ -13,6 +17,7 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
   const contractedHours = formData.get("contracted_hours_per_week");
   const allowance = formData.get("annual_allowance_days");
   const managerId = formData.get("manager_id");
+  const newAllowanceDays = employmentType === "salaried" && allowance ? Number(allowance) : null;
 
   const { error } = await supabase
     .from("profiles")
@@ -22,7 +27,7 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
       employment_type: employmentType,
       working_days: workingDays,
       contracted_hours_per_week: contractedHours ? Number(contractedHours) : null,
-      annual_allowance_days: employmentType === "salaried" && allowance ? Number(allowance) : null,
+      annual_allowance_days: newAllowanceDays,
       manager_id: managerId ? String(managerId) : null,
       is_manager: formData.get("is_manager") === "on",
       active: formData.get("active") === "on",
@@ -30,7 +35,19 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
     .eq("id", staffId);
 
   if (error) {
-    throw new Error(error.message);
+    fail(staffId, error.message);
+  }
+
+  // Keep this year's already-created balance row in sync with the profile
+  // default — otherwise editing the allowance here silently does nothing
+  // for anyone who already has a balance row for the current year (it'd
+  // only apply the next time a balance row is freshly created).
+  if (newAllowanceDays !== null) {
+    await supabase
+      .from("leave_balances")
+      .update({ base_allowance: newAllowanceDays })
+      .eq("staff_id", staffId)
+      .eq("leave_year", new Date().getFullYear());
   }
 
   redirect("/admin/staff");
@@ -40,7 +57,7 @@ export async function deleteStaffAction(staffId: string) {
   const { user } = await requireAdmin();
 
   if (staffId === user.id) {
-    throw new Error("You can't delete your own account.");
+    fail(staffId, "You can't delete your own account.");
   }
 
   await deleteStaff(staffId);
@@ -61,7 +78,7 @@ export async function setTemporaryPasswordAction(staffId: string, formData: Form
 
   const password = String(formData.get("password"));
   if (password.length < 8) {
-    throw new Error("Password must be at least 8 characters.");
+    fail(staffId, "Password must be at least 8 characters.");
   }
 
   await setTemporaryPassword(staffId, password);

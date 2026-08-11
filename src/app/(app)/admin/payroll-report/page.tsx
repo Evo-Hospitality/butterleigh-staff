@@ -63,6 +63,7 @@ export default async function PayrollReportPage({
               <th className="px-4 py-2 font-medium">Hours worked</th>
               <th className="px-4 py-2 font-medium">Accrued this month</th>
               <th className="px-4 py-2 font-medium">Holiday taken</th>
+              <th className="px-4 py-2 font-medium">Unpaid leave</th>
               <th className="px-4 py-2 font-medium">Lieu earned</th>
               <th className="px-4 py-2 font-medium">Remaining balance</th>
             </tr>
@@ -76,6 +77,9 @@ export default async function PayrollReportPage({
                 <td className="px-4 py-2">{row.accruedThisMonth?.toFixed(2) ?? "—"}</td>
                 <td className="px-4 py-2">
                   {row.holidayTakenThisMonth} {row.unit}
+                </td>
+                <td className="px-4 py-2">
+                  {row.employmentType === "salaried" ? `${row.unpaidLeaveThisMonth} days` : "—"}
                 </td>
                 <td className="px-4 py-2">{row.employmentType === "salaried" ? row.lieuEarnedThisMonth : "—"}</td>
                 <td className="px-4 py-2 font-medium">

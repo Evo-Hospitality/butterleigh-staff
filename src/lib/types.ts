@@ -37,6 +37,7 @@ export type LeaveRequest = {
   start_date: string;
   end_date: string;
   amount: number; // days for salaried, hours for hourly
+  is_unpaid: boolean; // salaried only — never touches the holiday balance
   status: RequestStatus;
   approver_id: string | null;
   notes: string | null;

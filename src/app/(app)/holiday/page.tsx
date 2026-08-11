@@ -112,7 +112,14 @@ export default async function HolidayPage() {
                 <td className="px-4 py-2">
                   {r.kind === "holiday" ? `${r.start_date} to ${r.end_date}` : r.work_date}
                 </td>
-                <td className="px-4 py-2">{r.kind === "holiday" ? `${r.amount} ${unit}` : "+1 day"}</td>
+                <td className="px-4 py-2">
+                  {r.kind === "holiday" ? `${r.amount} ${unit}` : "+1 day"}
+                  {r.kind === "holiday" && r.is_unpaid && (
+                    <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                      unpaid
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <StatusBadge status={r.status} />
                 </td>

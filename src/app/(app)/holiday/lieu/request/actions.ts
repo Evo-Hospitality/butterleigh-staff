@@ -2,12 +2,17 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { notifyNewLieuRequest } from "@/lib/holiday/notifications";
 
 export async function requestLieuDay(formData: FormData) {
   const { supabase, user, profile } = await requireUser();
 
+  function fail(message: string): never {
+    redirect(`/holiday/lieu/request?error=${encodeURIComponent(message)}`);
+  }
+
   if (profile.employment_type !== "salaried") {
-    throw new Error("Days in lieu only apply to salaried staff — hourly holiday already accrues from hours worked.");
+    fail("Days in lieu only apply to salaried staff — hourly holiday already accrues from hours worked.");
   }
 
   const workDate = String(formData.get("work_date"));
@@ -20,8 +25,10 @@ export async function requestLieuDay(formData: FormData) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    fail(error.message);
   }
+
+  await notifyNewLieuRequest(profile, workDate);
 
   redirect("/holiday");
 }

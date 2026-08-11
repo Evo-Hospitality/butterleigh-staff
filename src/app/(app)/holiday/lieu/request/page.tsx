@@ -2,8 +2,13 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { requestLieuDay } from "./actions";
 
-export default async function RequestLieuDayPage() {
+export default async function RequestLieuDayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { profile } = await requireUser();
+  const { error } = await searchParams;
 
   if (profile.employment_type !== "salaried") {
     redirect("/holiday");
@@ -17,6 +22,9 @@ export default async function RequestLieuDayPage() {
         example, a bank holiday Monday when you don&apos;t usually work Mondays). Once approved, it
         adds a day to your holiday allowance for the year.
       </p>
+      {error && (
+        <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
 
       <form action={requestLieuDay} className="flex max-w-md flex-col gap-4">
         <div>

@@ -43,13 +43,19 @@ export function RequestForm({ profile }: { profile: Profile }) {
       </div>
 
       {profile.employment_type === "salaried" ? (
-        <p className="rounded-md bg-muted px-3 py-2 text-sm">
-          {preview === null
-            ? "Pick a date range to see how many days this uses."
-            : preview === 0
-              ? "That range doesn't include any of your working days — nothing would be deducted."
-              : `This uses ${preview} day${preview === 1 ? "" : "s"} of your allowance.`}
-        </p>
+        <>
+          <p className="rounded-md bg-muted px-3 py-2 text-sm">
+            {preview === null
+              ? "Pick a date range to see how many days this uses."
+              : preview === 0
+                ? "That range doesn't include any of your working days — nothing would be deducted."
+                : `This uses ${preview} day${preview === 1 ? "" : "s"} of your allowance.`}
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="is_unpaid" />
+            This is unpaid leave (won&apos;t use any of your allowance)
+          </label>
+        </>
       ) : (
         <div>
           <label className="mb-1 block text-sm font-medium">Hours requested</label>

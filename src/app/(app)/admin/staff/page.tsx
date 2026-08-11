@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+import type { LeaveBalance, Profile } from "@/lib/types";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default async function StaffListPage() {
   const { supabase } = await requireAdmin();
+  const year = new Date().getFullYear();
 
-  const { data: staff } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("full_name")
-    .returns<Profile[]>();
+  const [{ data: staff }, { data: balances }] = await Promise.all([
+    supabase.from("profiles").select("*").order("full_name").returns<Profile[]>(),
+    supabase.from("leave_balances").select("*").eq("leave_year", year).returns<LeaveBalance[]>(),
+  ]);
+
+  const balanceByStaff = new Map((balances ?? []).map((b) => [b.staff_id, b]));
 
   return (
     <div>
@@ -52,7 +54,9 @@ export default async function StaffListPage() {
                   {person.working_days.map((d) => DAY_LABELS[d]).join(", ")}
                 </td>
                 <td className="px-4 py-2">
-                  {person.employment_type === "salaried" ? `${person.annual_allowance_days ?? "—"} days` : "12.07% accrual"}
+                  {person.employment_type === "salaried"
+                    ? `${balanceByStaff.get(person.id)?.base_allowance ?? person.annual_allowance_days ?? "—"} days`
+                    : "12.07% accrual"}
                 </td>
                 <td className="px-4 py-2">
                   {staff.find((m) => m.id === person.manager_id)?.full_name ?? "—"}
