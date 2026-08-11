@@ -14,6 +14,7 @@ export async function createStaffAction(formData: FormData) {
   const managerId = formData.get("manager_id");
   const email = String(formData.get("email"));
   const sendInviteNow = formData.get("send_invite_now") === "on";
+  const startDate = formData.get("start_date");
 
   const user = await createStaff({
     email,
@@ -26,6 +27,10 @@ export async function createStaffAction(formData: FormData) {
     managerId: managerId ? String(managerId) : null,
     isManager: formData.get("is_manager") === "on",
   });
+
+  if (startDate) {
+    await supabase.from("profiles").update({ start_date: String(startDate) }).eq("id", user.id);
+  }
 
   if (sendInviteNow) {
     await sendStaffInvite(email);

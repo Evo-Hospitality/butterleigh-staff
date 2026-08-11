@@ -18,6 +18,7 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
   const contractedHours = formData.get("contracted_hours_per_week");
   const allowance = formData.get("annual_allowance_days");
   const managerId = formData.get("manager_id");
+  const startDate = formData.get("start_date");
   const newAllowanceDays = employmentType === "salaried" && allowance ? Number(allowance) : null;
 
   const { error } = await supabase
@@ -32,6 +33,7 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
       manager_id: managerId ? String(managerId) : null,
       is_manager: formData.get("is_manager") === "on",
       active: formData.get("active") === "on",
+      start_date: startDate ? String(startDate) : null,
     })
     .eq("id", staffId);
 

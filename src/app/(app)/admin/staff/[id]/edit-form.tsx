@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
+import { proratedAllowance } from "@/lib/holiday/proration";
 import {
   updateStaffAction,
   deleteStaffAction,
@@ -30,6 +31,8 @@ export function EditStaffForm({
   currentAdminId: string;
 }) {
   const [employmentType, setEmploymentType] = useState(staff.employment_type);
+  const [startDate, setStartDate] = useState(staff.start_date ?? "");
+  const [allowance, setAllowance] = useState(staff.annual_allowance_days ?? 28);
   const action = updateStaffAction.bind(null, staff.id);
   const deleteAction = deleteStaffAction.bind(null, staff.id);
   const inviteAction = sendInviteAction.bind(null, staff.id, staff.email);
@@ -37,6 +40,10 @@ export function EditStaffForm({
   const impersonateAction = startImpersonationAction.bind(null, staff.id);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const canImpersonate = staff.role !== "admin" && staff.id !== currentAdminId && staff.active;
+  const prorated =
+    startDate && new Date(startDate).getFullYear() === new Date().getFullYear()
+      ? proratedAllowance(allowance, startDate, new Date().getFullYear())
+      : null;
 
   return (
     <>
@@ -134,6 +141,17 @@ export function EditStaffForm({
       <p className="text-sm text-muted-foreground">{staff.email}</p>
 
       <div>
+        <label className="mb-1 block text-sm font-medium">Start date (optional)</label>
+        <input
+          name="start_date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="w-full rounded-md border border-border px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div>
         <label className="mb-1 block text-sm font-medium">Employment type</label>
         <div className="flex gap-4 text-sm">
           <label className="flex items-center gap-1">
@@ -166,9 +184,16 @@ export function EditStaffForm({
             name="annual_allowance_days"
             type="number"
             step="0.1"
-            defaultValue={staff.annual_allowance_days ?? 28}
+            value={allowance}
+            onChange={(e) => setAllowance(Number(e.target.value))}
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           />
+          {prorated !== null && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Full entitlement — their {startDate.slice(0, 4)} balance will default to a pro-rated
+              ~{prorated} days on the Balances page.
+            </p>
+          )}
         </div>
       )}
 

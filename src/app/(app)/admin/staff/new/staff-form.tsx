@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
+import { proratedAllowance } from "@/lib/holiday/proration";
 import { createStaffAction } from "./actions";
 
 const DAYS = [
@@ -16,6 +17,13 @@ const DAYS = [
 
 export function StaffForm({ managers }: { managers: Profile[] }) {
   const [employmentType, setEmploymentType] = useState<"salaried" | "hourly">("hourly");
+  const [startDate, setStartDate] = useState("");
+  const [allowance, setAllowance] = useState(28);
+
+  const prorated =
+    startDate && new Date(startDate).getFullYear() === new Date().getFullYear()
+      ? proratedAllowance(allowance, startDate, new Date().getFullYear())
+      : null;
 
   return (
     <form action={createStaffAction} className="flex max-w-lg flex-col gap-4">
@@ -46,6 +54,17 @@ export function StaffForm({ managers }: { managers: Profile[] }) {
         Leave unchecked to set them up now and invite them later — from their staff page, whenever
         you&apos;re ready.
       </p>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Start date (optional)</label>
+        <input
+          name="start_date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="w-full rounded-md border border-border px-3 py-2 text-sm"
+        />
+      </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium">Employment type</label>
@@ -80,11 +99,14 @@ export function StaffForm({ managers }: { managers: Profile[] }) {
             name="annual_allowance_days"
             type="number"
             step="0.1"
-            defaultValue={28}
+            value={allowance}
+            onChange={(e) => setAllowance(Number(e.target.value))}
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Defaults to 28 (20 + 8 bank-holiday compensation) — override for this person if needed.
+            {prorated !== null
+              ? `Full entitlement — their first year (starting ${startDate}) will be pro-rated to ~${prorated} days once you set up their balance.`
+              : "Defaults to 28 (20 + 8 bank-holiday compensation) — override for this person if needed."}
           </p>
         </div>
       )}

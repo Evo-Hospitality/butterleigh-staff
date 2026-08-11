@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import type { Profile, LeaveBalance } from "@/lib/types";
+import { proratedAllowance } from "@/lib/holiday/proration";
 import { saveBalances } from "./actions";
 
 export default async function BalancesPage({
@@ -62,7 +63,11 @@ export default async function BalancesPage({
                 const bal = balanceByStaff.get(person.id);
                 const isSalaried = person.employment_type === "salaried";
                 const broughtForward = bal?.brought_forward ?? 0;
-                const baseAllowance = bal?.base_allowance ?? person.annual_allowance_days ?? 0;
+                const baseAllowance =
+                  bal?.base_allowance ??
+                  (person.annual_allowance_days
+                    ? proratedAllowance(person.annual_allowance_days, person.start_date, year)
+                    : 0);
                 const lieu = bal?.lieu_days_earned ?? 0;
                 const accruedHours = bal?.accrued_hours ?? 0;
                 const usedDays = bal?.used_days ?? 0;
@@ -85,13 +90,20 @@ export default async function BalancesPage({
                     </td>
                     <td className="px-4 py-2">
                       {isSalaried ? (
-                        <input
-                          type="number"
-                          step="0.1"
-                          name={`allowance_${person.id}`}
-                          defaultValue={baseAllowance}
-                          className="w-24 rounded-md border border-border px-2 py-1"
-                        />
+                        <>
+                          <input
+                            type="number"
+                            step="0.1"
+                            name={`allowance_${person.id}`}
+                            defaultValue={baseAllowance}
+                            className="w-24 rounded-md border border-border px-2 py-1"
+                          />
+                          {!bal && person.start_date && new Date(person.start_date).getFullYear() === year && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              pro-rated from {person.annual_allowance_days} (started {person.start_date})
+                            </p>
+                          )}
+                        </>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

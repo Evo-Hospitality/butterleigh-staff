@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import type { LeaveBalance, Profile } from "@/lib/types";
+import { proratedAllowance } from "@/lib/holiday/proration";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -55,7 +56,12 @@ export default async function StaffListPage() {
                 </td>
                 <td className="px-4 py-2">
                   {person.employment_type === "salaried"
-                    ? `${balanceByStaff.get(person.id)?.base_allowance ?? person.annual_allowance_days ?? "—"} days`
+                    ? `${
+                        balanceByStaff.get(person.id)?.base_allowance ??
+                        (person.annual_allowance_days
+                          ? proratedAllowance(person.annual_allowance_days, person.start_date, year)
+                          : "—")
+                      } days`
                     : "12.07% accrual"}
                 </td>
                 <td className="px-4 py-2">

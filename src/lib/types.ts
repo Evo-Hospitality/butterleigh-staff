@@ -16,6 +16,7 @@ export type Profile = {
   active: boolean;
   invited_at: string | null;
   must_change_password: boolean;
+  start_date: string | null;
   created_at: string;
 };
 
