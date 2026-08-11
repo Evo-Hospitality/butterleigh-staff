@@ -23,14 +23,14 @@ export default async function SopsPage() {
   const answeredEntries = answered ?? [];
 
   let unanswered: SopEntry[] = [];
+  let drafts: SopEntry[] = [];
   if (canManage) {
-    const { data } = await supabase
-      .from("sop_entries")
-      .select("*")
-      .eq("status", "unanswered")
-      .order("created_at")
-      .returns<SopEntry[]>();
-    unanswered = data ?? [];
+    const [{ data: unansweredData }, { data: draftData }] = await Promise.all([
+      supabase.from("sop_entries").select("*").eq("status", "unanswered").order("created_at").returns<SopEntry[]>(),
+      supabase.from("sop_entries").select("*").eq("status", "draft").order("created_at").returns<SopEntry[]>(),
+    ]);
+    unanswered = unansweredData ?? [];
+    drafts = draftData ?? [];
   }
 
   let blocksByEntry = new Map<string, SopBlock[]>();
@@ -101,6 +101,24 @@ export default async function SopsPage() {
             {unanswered.length === 0 && (
               <p className="text-sm text-muted-foreground">Nothing waiting on an answer.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {canManage && drafts.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-3 text-lg font-bold text-primary">Drafts</h2>
+          <div className="flex flex-col gap-2">
+            {drafts.map((e) => (
+              <Link
+                key={e.id}
+                href={`/sops/${e.id}`}
+                className="rounded-lg border border-border p-3 text-sm hover:border-accent"
+              >
+                <span className="font-medium">{e.title}</span>
+                <span className="text-muted-foreground"> · not published</span>
+              </Link>
+            ))}
           </div>
         </div>
       )}

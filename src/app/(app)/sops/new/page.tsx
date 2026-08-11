@@ -1,6 +1,6 @@
 import { requireSopManage } from "@/lib/auth";
 import { SopBlockEditor } from "@/components/sop-block-editor";
-import { publishAction } from "./actions";
+import { publishAction, saveDraftAction } from "./actions";
 
 export default async function NewSopPage({
   searchParams,
@@ -17,10 +17,11 @@ export default async function NewSopPage({
         <p className="mb-4 max-w-2xl rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
       <SopBlockEditor
-        action={publishAction}
+        publishAction={publishAction}
+        publishLabel="Publish"
+        draftAction={saveDraftAction}
         titleLabel="Title"
         titlePlaceholder="e.g. How to process a refund on the EPOS"
-        submitLabel="Publish"
       />
     </div>
   );

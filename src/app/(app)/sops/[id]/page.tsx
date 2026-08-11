@@ -2,18 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isManagerOrAdmin, type SopBlock, type SopEntry } from "@/lib/types";
-import { SopBlockEditor } from "@/components/sop-block-editor";
-import { answerAction } from "./actions";
+import { SopBlockEditor, type InitialBlock } from "@/components/sop-block-editor";
+import { publishAction, saveDraftAction } from "./actions";
 
 export default async function SopDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; edit?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, edit } = await searchParams;
   const { supabase, profile } = await requireUser();
 
   const { data: entry } = await supabase
@@ -26,8 +26,9 @@ export default async function SopDetailPage({
   }
 
   const canManage = isManagerOrAdmin(profile);
+  const isEditing = entry.status !== "answered" || edit === "1";
 
-  if (entry.status === "unanswered") {
+  if (isEditing) {
     if (!canManage) {
       return (
         <div>
@@ -43,24 +44,45 @@ export default async function SopDetailPage({
       );
     }
 
-    const answerBound = answerAction.bind(null, id);
+    const { data: existingBlocks } = await supabase
+      .from("sop_blocks")
+      .select("*")
+      .eq("entry_id", id)
+      .order("sort_order")
+      .returns<SopBlock[]>();
+    const initialBlocks: InitialBlock[] = (existingBlocks ?? []).map((b) => ({
+      kind: b.kind,
+      body: b.body,
+      url: b.url,
+      caption: b.caption,
+    }));
+
+    const publishBound = publishAction.bind(null, id);
+    const draftBound = saveDraftAction.bind(null, id);
+    const wasPublished = entry.status === "answered";
+
     return (
       <div>
-        <Link href="/sops" className="text-sm text-muted-foreground hover:text-accent">
-          &larr; Back to SOPs
+        <Link href={wasPublished ? `/sops/${id}` : "/sops"} className="text-sm text-muted-foreground hover:text-accent">
+          &larr; {wasPublished ? "Cancel" : "Back to SOPs"}
         </Link>
-        <h1 className="mt-2 mb-1 text-2xl font-bold text-primary">Answer this question</h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          Asked by {entry.asked_by_name ?? "someone no longer on the system"}
-        </p>
+        <h1 className="mt-2 mb-1 text-2xl font-bold text-primary">
+          {wasPublished ? "Edit this SOP" : "Answer this question"}
+        </h1>
+        {entry.asked_by_name && (
+          <p className="mb-6 text-sm text-muted-foreground">Asked by {entry.asked_by_name}</p>
+        )}
         {error && (
           <p className="mb-4 max-w-2xl rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
         <SopBlockEditor
-          action={answerBound}
+          publishAction={publishBound}
+          publishLabel={wasPublished ? "Save changes" : "Publish"}
+          draftAction={draftBound}
+          draftLabel={wasPublished ? "Save as draft (unpublish)" : "Save as draft"}
           titleLabel="Title"
           initialTitle={entry.title}
-          submitLabel="Publish answer"
+          initialBlocks={initialBlocks}
         />
       </div>
     );
@@ -78,7 +100,14 @@ export default async function SopDetailPage({
       <Link href="/sops" className="text-sm text-muted-foreground hover:text-accent">
         &larr; Back to SOPs
       </Link>
-      <h1 className="mt-2 mb-1 text-2xl font-bold text-primary">{entry.title}</h1>
+      <div className="mt-2 mb-1 flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold text-primary">{entry.title}</h1>
+        {canManage && (
+          <Link href={`/sops/${id}?edit=1`} className="text-sm font-medium text-accent hover:underline">
+            Edit
+          </Link>
+        )}
+      </div>
       {entry.answered_by_name && (
         <p className="mb-6 text-sm text-muted-foreground">Answered by {entry.answered_by_name}</p>
       )}

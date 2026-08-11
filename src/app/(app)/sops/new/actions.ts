@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireSopManage } from "@/lib/auth";
-import { insertBlocks } from "@/lib/sops/blocks";
+import { countBlocks, insertBlocks } from "@/lib/sops/blocks";
 
 function fail(message: string): never {
   redirect(`/sops/new?error=${encodeURIComponent(message)}`);
@@ -15,6 +15,15 @@ export async function publishAction(formData: FormData) {
   const blocksJson = String(formData.get("blocks_json") ?? "[]");
   if (!title) {
     fail("Give it a title.");
+  }
+  let blockCount: number;
+  try {
+    blockCount = countBlocks(blocksJson);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : "Malformed answer content.");
+  }
+  if (blockCount === 0) {
+    fail("Add at least one block before publishing.");
   }
 
   const { data: entry, error } = await supabase
@@ -33,6 +42,39 @@ export async function publishAction(formData: FormData) {
 
   if (error || !entry) {
     fail(error?.message ?? "Failed to create this entry.");
+  }
+
+  try {
+    await insertBlocks(supabase, entry.id, blocksJson);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : "Failed to save content.");
+  }
+
+  redirect(`/sops/${entry.id}`);
+}
+
+export async function saveDraftAction(formData: FormData) {
+  const { supabase } = await requireSopManage();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const blocksJson = String(formData.get("blocks_json") ?? "[]");
+  if (!title) {
+    fail("Give it a title.");
+  }
+
+  const { data: entry, error } = await supabase
+    .from("sop_entries")
+    .insert({
+      title,
+      asked_by: null,
+      asked_by_name: null,
+      status: "draft",
+    })
+    .select()
+    .single();
+
+  if (error || !entry) {
+    fail(error?.message ?? "Failed to save draft.");
   }
 
   try {

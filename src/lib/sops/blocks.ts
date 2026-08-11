@@ -48,10 +48,19 @@ function parseRawBlocks(blocksJson: string): RawBlock[] {
   });
 }
 
+// For the "must have at least one block" check that only applies when
+// publishing, not saving a draft — reuses the same validation as insertBlocks.
+export function countBlocks(blocksJson: string): number {
+  return parseRawBlocks(blocksJson).length;
+}
+
+// A no-op on an empty array — drafts are allowed to have no content yet.
+// Callers that require at least one block (publishing) check that
+// themselves before calling this.
 export async function insertBlocks(supabase: SupabaseClient, entryId: string, blocksJson: string) {
   const blocks = parseRawBlocks(blocksJson);
   if (blocks.length === 0) {
-    throw new Error("Add at least one block before publishing.");
+    return;
   }
 
   const rows = blocks.map((b, i) => ({

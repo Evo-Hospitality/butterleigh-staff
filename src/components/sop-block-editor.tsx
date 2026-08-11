@@ -22,21 +22,41 @@ function newId() {
   return crypto.randomUUID();
 }
 
+export type InitialBlock = {
+  kind: "text" | "photo" | "link";
+  body?: string | null;
+  url?: string | null;
+  caption?: string | null;
+};
+
+function fromInitialBlock(b: InitialBlock): Block {
+  const localId = newId();
+  if (b.kind === "text") return { localId, kind: "text", body: b.body ?? "" };
+  if (b.kind === "photo") return { localId, kind: "photo", status: "done", url: b.url ?? null, caption: b.caption ?? "" };
+  return { localId, kind: "link", url: b.url ?? "", caption: b.caption ?? "" };
+}
+
 export function SopBlockEditor({
-  action,
+  publishAction,
+  publishLabel,
+  draftAction,
+  draftLabel = "Save as draft",
   titleLabel,
   titlePlaceholder,
   initialTitle,
-  submitLabel,
+  initialBlocks,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  publishAction: (formData: FormData) => Promise<void>;
+  publishLabel: string;
+  draftAction: (formData: FormData) => Promise<void>;
+  draftLabel?: string;
   titleLabel: string;
   titlePlaceholder?: string;
   initialTitle?: string;
-  submitLabel: string;
+  initialBlocks?: InitialBlock[];
 }) {
   const [title, setTitle] = useState(initialTitle ?? "");
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blocks, setBlocks] = useState<Block[]>(() => (initialBlocks ?? []).map(fromInitialBlock));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function addText() {
@@ -81,7 +101,10 @@ export function SopBlockEditor({
   }
 
   const hasPendingUploads = blocks.some((b) => b.kind === "photo" && b.status !== "done");
-  const canSubmit = title.trim().length > 0 && blocks.length > 0 && !hasPendingUploads;
+  // Publishing needs real content; a draft can be saved with just a title
+  // to come back to later.
+  const canPublish = title.trim().length > 0 && blocks.length > 0 && !hasPendingUploads;
+  const canSaveDraft = title.trim().length > 0 && !hasPendingUploads;
 
   const serializable = blocks
     .filter((b) => b.kind !== "photo" || b.status === "done")
@@ -94,7 +117,7 @@ export function SopBlockEditor({
     );
 
   return (
-    <form action={action} className="flex max-w-2xl flex-col gap-5">
+    <form action={publishAction} className="flex max-w-2xl flex-col gap-5">
       <div>
         <label className="mb-1 block text-sm font-medium">{titleLabel}</label>
         <input
@@ -210,13 +233,23 @@ export function SopBlockEditor({
         </button>
       </div>
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {submitLabel}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={!canPublish}
+          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {publishLabel}
+        </button>
+        <button
+          type="submit"
+          formAction={draftAction}
+          disabled={!canSaveDraft}
+          className="self-start rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {draftLabel}
+        </button>
+      </div>
     </form>
   );
 }

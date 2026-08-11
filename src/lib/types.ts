@@ -131,7 +131,7 @@ export type MaintenanceUpdateEntry = {
   created_at: string;
 };
 
-export type SopStatus = "unanswered" | "answered";
+export type SopStatus = "unanswered" | "draft" | "answered";
 export type SopBlockKind = "text" | "photo" | "link";
 
 export type SopEntry = {
