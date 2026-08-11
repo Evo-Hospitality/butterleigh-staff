@@ -12,7 +12,7 @@ export default async function EditStaffPage({
 }) {
   const { id } = await params;
   const { error } = await searchParams;
-  const { supabase } = await requireAdmin();
+  const { supabase, user } = await requireAdmin();
 
   const [{ data: staff }, { data: managers }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", id).single<Profile>(),
@@ -29,7 +29,7 @@ export default async function EditStaffPage({
       {error && (
         <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
-      <EditStaffForm staff={staff} managers={managers ?? []} />
+      <EditStaffForm staff={staff} managers={managers ?? []} currentAdminId={user.id} />
     </div>
   );
 }

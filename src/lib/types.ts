@@ -71,3 +71,13 @@ export type BankHoliday = {
   date: string;
   name: string;
 };
+
+export type ImpersonationLogEntry = {
+  id: string;
+  admin_id: string | null;
+  admin_name: string;
+  target_id: string | null;
+  target_name: string;
+  started_at: string;
+  ended_at: string | null;
+};

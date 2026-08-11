@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
-import { updateStaffAction, deleteStaffAction, sendInviteAction, setTemporaryPasswordAction } from "./actions";
+import {
+  updateStaffAction,
+  deleteStaffAction,
+  sendInviteAction,
+  setTemporaryPasswordAction,
+  startImpersonationAction,
+} from "./actions";
 
 const DAYS = [
   { value: 1, label: "Mon" },
@@ -14,13 +20,23 @@ const DAYS = [
   { value: 0, label: "Sun" },
 ];
 
-export function EditStaffForm({ staff, managers }: { staff: Profile; managers: Profile[] }) {
+export function EditStaffForm({
+  staff,
+  managers,
+  currentAdminId,
+}: {
+  staff: Profile;
+  managers: Profile[];
+  currentAdminId: string;
+}) {
   const [employmentType, setEmploymentType] = useState(staff.employment_type);
   const action = updateStaffAction.bind(null, staff.id);
   const deleteAction = deleteStaffAction.bind(null, staff.id);
   const inviteAction = sendInviteAction.bind(null, staff.id, staff.email);
   const tempPasswordAction = setTemporaryPasswordAction.bind(null, staff.id);
+  const impersonateAction = startImpersonationAction.bind(null, staff.id);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const canImpersonate = staff.role !== "admin" && staff.id !== currentAdminId && staff.active;
 
   return (
     <>
@@ -78,6 +94,31 @@ export function EditStaffForm({ staff, managers }: { staff: Profile; managers: P
         </form>
       )}
     </div>
+
+    {canImpersonate && (
+      <div className="mb-6 max-w-lg rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-yellow-900">
+            Log in as {staff.full_name} to submit or manage something on their behalf.
+          </p>
+          <form
+            action={impersonateAction}
+            onSubmit={(e) => {
+              if (!confirm(`Log in as ${staff.full_name}? You can return to your own account at any time.`)) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded-md border border-yellow-400 bg-white px-3 py-1.5 text-sm font-medium text-yellow-900 hover:bg-yellow-100"
+            >
+              Log in as
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
 
     <form action={action} className="flex max-w-lg flex-col gap-4">
       <div>

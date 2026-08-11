@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { deleteStaff, sendStaffInvite, setTemporaryPassword } from "@/lib/holiday/staff";
+import { startImpersonation } from "@/lib/impersonation";
 
 function fail(staffId: string, message: string): never {
   redirect(`/admin/staff/${staffId}?error=${encodeURIComponent(message)}`);
@@ -93,4 +94,14 @@ export async function setTemporaryPasswordAction(staffId: string, formData: Form
     .eq("id", staffId);
 
   revalidatePath(`/admin/staff/${staffId}`);
+}
+
+export async function startImpersonationAction(staffId: string) {
+  try {
+    await startImpersonation(staffId);
+  } catch (err) {
+    fail(staffId, err instanceof Error ? err.message : "Failed to start impersonation.");
+  }
+
+  redirect("/");
 }
