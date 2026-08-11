@@ -87,6 +87,24 @@ export async function setTemporaryPassword(staffId: string, password: string) {
   }
 }
 
+// Changes a staff member's login email directly — same admin-override
+// pattern as setTemporaryPassword: applies immediately (email_confirm skips
+// the usual "confirm your new address" round-trip), no action needed from
+// them. Keeps profiles.email (used for display and notifications) in sync,
+// since it doesn't auto-update from an auth-level change.
+export async function updateStaffEmail(staffId: string, newEmail: string) {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(staffId, { email: newEmail, email_confirm: true });
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { error: profileError } = await admin.from("profiles").update({ email: newEmail }).eq("id", staffId);
+  if (profileError) {
+    throw new Error(profileError.message);
+  }
+}
+
 // Permanently removes a staff member and everything tied to them (their own
 // requests, balances, hours entries — via ON DELETE CASCADE). Anywhere else
 // they're referenced (manager_id, approver_id, entered_by on someone else's

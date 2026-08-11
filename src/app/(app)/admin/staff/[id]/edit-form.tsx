@@ -8,6 +8,7 @@ import {
   deleteStaffAction,
   sendInviteAction,
   setTemporaryPasswordAction,
+  setEmailAction,
   startImpersonationAction,
 } from "./actions";
 
@@ -37,8 +38,10 @@ export function EditStaffForm({
   const deleteAction = deleteStaffAction.bind(null, staff.id);
   const inviteAction = sendInviteAction.bind(null, staff.id, staff.email);
   const tempPasswordAction = setTemporaryPasswordAction.bind(null, staff.id);
+  const emailAction = setEmailAction.bind(null, staff.id);
   const impersonateAction = startImpersonationAction.bind(null, staff.id);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const canImpersonate = staff.role !== "admin" && staff.id !== currentAdminId && staff.active;
   const prorated =
     startDate && new Date(startDate).getFullYear() === new Date().getFullYear()
@@ -59,6 +62,13 @@ export function EditStaffForm({
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={() => setShowEmailForm((v) => !v)}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:border-accent"
+          >
+            Change email
+          </button>
+          <button
+            type="button"
             onClick={() => setShowPasswordForm((v) => !v)}
             className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:border-accent"
           >
@@ -74,6 +84,31 @@ export function EditStaffForm({
           </form>
         </div>
       </div>
+
+      {showEmailForm && (
+        <form action={emailAction} className="mt-3 flex items-end gap-2 border-t border-border pt-3">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium">New email</label>
+            <input
+              name="email"
+              type="email"
+              required
+              defaultValue={staff.email}
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Changes their login email immediately — no confirmation step, and they&apos;ll sign in
+              with the new address straight away.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            Set
+          </button>
+        </form>
+      )}
 
       {showPasswordForm && (
         <form action={tempPasswordAction} className="mt-3 flex items-end gap-2 border-t border-border pt-3">

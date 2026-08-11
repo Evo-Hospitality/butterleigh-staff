@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { deleteStaff, sendStaffInvite, setTemporaryPassword } from "@/lib/holiday/staff";
+import { deleteStaff, sendStaffInvite, setTemporaryPassword, updateStaffEmail } from "@/lib/holiday/staff";
 import { startImpersonation } from "@/lib/impersonation";
 
 function fail(staffId: string, message: string): never {
@@ -95,6 +95,23 @@ export async function setTemporaryPasswordAction(staffId: string, formData: Form
     .from("profiles")
     .update({ must_change_password: true, invited_at: new Date().toISOString() })
     .eq("id", staffId);
+
+  revalidatePath(`/admin/staff/${staffId}`);
+}
+
+export async function setEmailAction(staffId: string, formData: FormData) {
+  await requireAdmin();
+
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    fail(staffId, "Enter an email address.");
+  }
+
+  try {
+    await updateStaffEmail(staffId, email);
+  } catch (err) {
+    fail(staffId, err instanceof Error ? err.message : "Failed to update email.");
+  }
 
   revalidatePath(`/admin/staff/${staffId}`);
 }
