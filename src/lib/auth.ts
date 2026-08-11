@@ -48,3 +48,14 @@ export async function requireApprover() {
   }
   return result;
 }
+
+// Admins always have implicit access, same fallback pattern as everywhere
+// else — the flag is what an admin toggles per person, not a hard boundary
+// admins themselves are subject to.
+export async function requireMaintenanceAccess() {
+  const result = await requireUser();
+  if (!result.profile.has_maintenance_access && result.profile.role !== "admin") {
+    redirect("/");
+  }
+  return result;
+}

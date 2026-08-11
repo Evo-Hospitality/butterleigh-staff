@@ -17,6 +17,7 @@ export type Profile = {
   invited_at: string | null;
   must_change_password: boolean;
   start_date: string | null;
+  has_maintenance_access: boolean;
   created_at: string;
 };
 
@@ -81,4 +82,31 @@ export type ImpersonationLogEntry = {
   target_name: string;
   started_at: string;
   ended_at: string | null;
+};
+
+export type MaintenanceStatus = "open" | "closed";
+export type MaintenanceUpdateKind = "note" | "reassigned" | "status_changed";
+
+export type MaintenanceRequest = {
+  id: string;
+  submitted_by: string | null;
+  submitted_by_name: string;
+  assigned_to: string | null;
+  assigned_to_name: string;
+  title: string;
+  description: string | null;
+  photo_url: string | null;
+  status: MaintenanceStatus;
+  created_at: string;
+  closed_at: string | null;
+};
+
+export type MaintenanceUpdateEntry = {
+  id: string;
+  request_id: string;
+  author_id: string | null;
+  author_name: string;
+  kind: MaintenanceUpdateKind;
+  note: string;
+  created_at: string;
 };

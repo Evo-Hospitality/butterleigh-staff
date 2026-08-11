@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Wrench } from "lucide-react";
 import type { Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -10,6 +10,13 @@ const TILES = [
     description: "Request holiday, request a day in lieu, check your balance",
     icon: CalendarDays,
     show: (_profile: Profile) => true,
+  },
+  {
+    href: "/maintenance",
+    label: "Maintenance",
+    description: "Report an issue and track progress until it's fixed",
+    icon: Wrench,
+    show: (profile: Profile) => profile.has_maintenance_access || profile.role === "admin",
   },
 ];
 

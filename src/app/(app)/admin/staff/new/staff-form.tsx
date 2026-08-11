@@ -163,6 +163,11 @@ export function StaffForm({ managers }: { managers: Profile[] }) {
         </select>
       </div>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="has_maintenance_access" />
+        Has access to the Maintenance app
+      </label>
+
       <button
         type="submit"
         className="mt-2 self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"

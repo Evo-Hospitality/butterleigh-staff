@@ -34,6 +34,7 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
       is_manager: formData.get("is_manager") === "on",
       active: formData.get("active") === "on",
       start_date: startDate ? String(startDate) : null,
+      has_maintenance_access: formData.get("has_maintenance_access") === "on",
     })
     .eq("id", staffId);
 

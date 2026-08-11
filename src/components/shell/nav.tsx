@@ -5,6 +5,7 @@ import { Logo } from "./logo";
 
 export function Nav({ profile }: { profile: Profile }) {
   const canApprove = profile.is_manager || profile.role === "admin";
+  const canAccessMaintenance = profile.has_maintenance_access || profile.role === "admin";
 
   return (
     <header className="border-b border-border bg-primary text-primary-foreground">
@@ -17,6 +18,11 @@ export function Nav({ profile }: { profile: Profile }) {
           <Link href="/holiday" className="hover:text-accent">
             Holiday
           </Link>
+          {canAccessMaintenance && (
+            <Link href="/maintenance" className="hover:text-accent">
+              Maintenance
+            </Link>
+          )}
           {canApprove && (
             <Link href="/holiday/approvals" className="hover:text-accent">
               Approvals
