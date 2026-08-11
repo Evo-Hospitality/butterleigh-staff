@@ -66,3 +66,13 @@ export async function requireSopManage() {
   }
   return result;
 }
+
+// Deciding (approve/decline) an event suggestion — same admin-or-manager
+// fallback used by can_manage_events() in RLS.
+export async function requireEventsManage() {
+  const result = await requireUser();
+  if (!isManagerOrAdmin(result.profile)) {
+    redirect("/events");
+  }
+  return result;
+}

@@ -156,3 +156,28 @@ export type SopBlock = {
   caption: string | null;
   created_at: string;
 };
+
+export type EventSuggestionStatus = "pending" | "approved" | "declined";
+
+export type EventSuggestion = {
+  id: string;
+  title: string;
+  description: string | null;
+  submitted_by: string | null;
+  submitted_by_name: string;
+  status: EventSuggestionStatus;
+  decided_by: string | null;
+  decided_by_name: string | null;
+  decision_note: string | null;
+  created_at: string;
+  decided_at: string | null;
+};
+
+export type EventSuggestionPhoto = {
+  id: string;
+  suggestion_id: string;
+  url: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+};

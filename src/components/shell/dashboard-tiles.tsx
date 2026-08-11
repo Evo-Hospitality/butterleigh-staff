@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenText, CalendarDays, Wrench } from "lucide-react";
+import { BookOpenText, CalendarDays, PartyPopper, Wrench } from "lucide-react";
 import { canAccessMaintenance, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -23,6 +23,13 @@ const TILES = [
     label: "SOPs & FAQs",
     description: "Ask a question or search how something's meant to be done",
     icon: BookOpenText,
+    show: (_profile: Profile) => true,
+  },
+  {
+    href: "/events",
+    label: "Event ideas",
+    description: "Suggest an event and see what's been approved",
+    icon: PartyPopper,
     show: (_profile: Profile) => true,
   },
 ];
