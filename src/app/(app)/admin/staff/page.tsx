@@ -33,6 +33,7 @@ export default async function StaffListPage() {
           <thead className="bg-muted text-left text-muted-foreground">
             <tr>
               <th className="px-4 py-2 font-medium">Name</th>
+              <th className="px-4 py-2 font-medium">Email</th>
               <th className="px-4 py-2 font-medium">Type</th>
               <th className="px-4 py-2 font-medium">Working days</th>
               <th className="px-4 py-2 font-medium">Allowance</th>
@@ -50,6 +51,7 @@ export default async function StaffListPage() {
                     {person.full_name}
                   </Link>
                 </td>
+                <td className="px-4 py-2 text-muted-foreground">{person.email}</td>
                 <td className="px-4 py-2 capitalize">{person.employment_type}</td>
                 <td className="px-4 py-2">
                   {person.working_days.map((d) => DAY_LABELS[d]).join(", ")}
