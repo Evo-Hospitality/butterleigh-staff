@@ -70,24 +70,18 @@ export async function reassignAction(actionId: string, formData: FormData) {
     fail(actionId, "Could not find that person.");
   }
 
-  const { error } = await supabase
-    .from("action_items")
-    .update({ assigned_to: newAssignee.id, assigned_to_name: newAssignee.full_name })
-    .eq("id", actionId)
-    .select()
-    .single();
+  // Goes through an RPC rather than a direct client-side UPDATE — see
+  // 0019_reassign_action_item_rpc.sql for why. Also inserts the
+  // "reassigned" log entry atomically.
+  const { error } = await supabase.rpc("reassign_action_item", {
+    p_action_id: actionId,
+    p_new_assignee_id: newAssignee.id,
+  });
   if (error) {
-    fail(actionId, "You don't have permission to reassign this Action.");
+    fail(actionId, error.message || "You don't have permission to reassign this Action.");
   }
 
   const note = `Reassigned from ${action.assigned_to_name} to ${newAssignee.full_name}`;
-  await supabase.from("action_item_updates").insert({
-    action_id: actionId,
-    author_id: profile.id,
-    author_name: profile.full_name,
-    kind: "reassigned",
-    note,
-  });
 
   if (action.submitted_by) {
     await notifyActionUpdate(action.submitted_by, actionId, action.title, profile.full_name, note);
