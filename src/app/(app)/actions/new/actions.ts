@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { requireActionItemsAccess } from "@/lib/auth";
+import { isManagerOrAdmin } from "@/lib/types";
 import { uploadActionPhoto } from "@/lib/action-items/storage";
 import { notifyActionAssigned } from "@/lib/action-items/notifications";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function fail(message: string): never {
   redirect(`/actions/new?error=${encodeURIComponent(message)}`);
@@ -24,12 +26,12 @@ export async function createActionAction(formData: FormData) {
     fail("Choose who to assign this to.");
   }
 
-  const { data: chosen } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("id", String(assignedToId))
-    .single();
-  if (!chosen) {
+  // Admin client — the same reasoning as the "Assign to" dropdown on the
+  // form itself: a non-admin manager's own RLS-scoped session can't read
+  // an arbitrary other manager/admin's profile, only their own reports.
+  const admin = createAdminClient();
+  const { data: chosen } = await admin.from("profiles").select("*").eq("id", String(assignedToId)).single();
+  if (!chosen || !isManagerOrAdmin(chosen)) {
     fail("Could not find that person.");
   }
 

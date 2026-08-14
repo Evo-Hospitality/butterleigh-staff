@@ -4,6 +4,7 @@ import { requireMaintenanceAccess } from "@/lib/auth";
 import { canBeAssignedMaintenance, type MaintenanceRequest, type MaintenanceUpdateEntry, type Profile } from "@/lib/types";
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function StatusBadge({ status }: { status: string }) {
   const style = status === "open" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
@@ -45,7 +46,11 @@ export default async function MaintenanceDetailPage({
 
   let assignees: Profile[] = [];
   if (canManage) {
-    const { data } = await supabase
+    // Admin client — a non-admin manager's own RLS-scoped session can't
+    // read an arbitrary other manager/admin's profile, only their own
+    // reports.
+    const admin = createAdminClient();
+    const { data } = await admin
       .from("profiles")
       .select("*")
       .eq("active", true)

@@ -1,5 +1,6 @@
 import { requireActionItemsAccess } from "@/lib/auth";
 import { isManagerOrAdmin, type Profile } from "@/lib/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createActionAction } from "./actions";
 
 export default async function NewActionPage({
@@ -7,13 +8,18 @@ export default async function NewActionPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const { supabase } = await requireActionItemsAccess();
+  await requireActionItemsAccess();
   const { error } = await searchParams;
 
   // Everyone who can reach this page is already a manager/admin, so the
   // "Assign to" dropdown always shows — unlike Maintenance, there's no
-  // auto-routing branch for regular staff.
-  const { data } = await supabase.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>();
+  // auto-routing branch for regular staff. Uses the admin client rather
+  // than the caller's own — profiles' own RLS only lets a non-admin
+  // manager see themselves and their direct reports, not the wider
+  // manager/admin pool this dropdown needs (same reasoning as
+  // lib/maintenance/routing.ts's resolveDefaultAssignee()).
+  const admin = createAdminClient();
+  const { data } = await admin.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>();
   const assignees = (data ?? []).filter(isManagerOrAdmin);
 
   return (

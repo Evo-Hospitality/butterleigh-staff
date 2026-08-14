@@ -61,7 +61,11 @@ export async function reassignAction(actionId: string, formData: FormData) {
     fail(actionId, "Action not found.");
   }
 
-  const { data: newAssignee } = await supabase
+  // Admin client — the acting user's own RLS-scoped session can't
+  // necessarily read the new assignee's profile if they're not a direct
+  // report (same reasoning as the "Assign to"/"Reassign" dropdowns).
+  const admin = createAdminClient();
+  const { data: newAssignee } = await admin
     .from("profiles")
     .select("id, full_name")
     .eq("id", newAssigneeId)

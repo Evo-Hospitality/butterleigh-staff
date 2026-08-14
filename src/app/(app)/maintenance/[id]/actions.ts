@@ -61,7 +61,11 @@ export async function reassignAction(requestId: string, formData: FormData) {
     fail(requestId, "Request not found.");
   }
 
-  const { data: newAssignee } = await supabase
+  // Admin client — the acting user's own RLS-scoped session can't
+  // necessarily read the new assignee's profile if they're not a direct
+  // report.
+  const admin = createAdminClient();
+  const { data: newAssignee } = await admin
     .from("profiles")
     .select("id, full_name")
     .eq("id", newAssigneeId)
@@ -70,24 +74,21 @@ export async function reassignAction(requestId: string, formData: FormData) {
     fail(requestId, "Could not find that person.");
   }
 
-  const { error } = await supabase
-    .from("maintenance_requests")
-    .update({ assigned_to: newAssignee.id, assigned_to_name: newAssignee.full_name })
-    .eq("id", requestId)
-    .select()
-    .single();
+  // Goes through an RPC rather than a direct client-side UPDATE — a plain
+  // RLS UPDATE changing assigned_to (the same column
+  // maintenance_requests_update's USING clause checks) fails unreliably
+  // for non-admin managers specifically (see
+  // 0020_reassign_maintenance_request_rpc.sql). Also inserts the
+  // "reassigned" log entry atomically.
+  const { error } = await supabase.rpc("reassign_maintenance_request", {
+    p_request_id: requestId,
+    p_new_assignee_id: newAssignee.id,
+  });
   if (error) {
-    fail(requestId, "You don't have permission to reassign this request.");
+    fail(requestId, error.message || "You don't have permission to reassign this request.");
   }
 
   const note = `Reassigned from ${request.assigned_to_name} to ${newAssignee.full_name}`;
-  await supabase.from("maintenance_updates").insert({
-    request_id: requestId,
-    author_id: profile.id,
-    author_name: profile.full_name,
-    kind: "reassigned",
-    note,
-  });
 
   if (request.submitted_by) {
     await notifyMaintenanceUpdate(request.submitted_by, requestId, request.title, profile.full_name, note);
