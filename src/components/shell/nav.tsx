@@ -15,26 +15,26 @@ export function Nav({ profile }: { profile: Profile }) {
           Butterleigh Inn
         </Link>
         <nav className="flex flex-wrap items-center gap-3 text-sm sm:gap-6 sm:text-[1.75rem]">
-          <Link href="/holiday" className="hover:text-accent">
-            Holiday
-          </Link>
-          <Link href="/sops" className="hover:text-accent">
-            SOPs
-          </Link>
-          <Link href="/events" className="hover:text-accent">
-            Events
-          </Link>
           <Link href="/tasks" className="hover:text-accent">
             Tasks
           </Link>
+          <Link href="/holiday" className="hover:text-accent">
+            Holiday
+          </Link>
           <Link href="/social-photos" className="hover:text-accent">
             Photos
+          </Link>
+          <Link href="/events" className="hover:text-accent">
+            Events
           </Link>
           {canAccessMaintenance && (
             <Link href="/maintenance" className="hover:text-accent">
               Maintenance
             </Link>
           )}
+          <Link href="/sops" className="hover:text-accent">
+            SOPs
+          </Link>
           {canApprove && (
             <Link href="/actions" className="hover:text-accent">
               Actions

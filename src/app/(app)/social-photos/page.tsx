@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { SocialPhoto, SocialPhotoPost } from "@/lib/types";
-import { toggleUsedAction } from "./actions";
+import { DeleteSocialPhotoPostButton } from "@/components/delete-social-photo-post-button";
+import { deletePostAction, toggleUsedAction } from "./actions";
 
 export default async function SocialPhotosPage({
   searchParams,
@@ -53,11 +54,15 @@ export default async function SocialPhotosPage({
       <div className="flex flex-col gap-6">
         {(posts ?? []).map((post) => {
           const postPhotos = photosByPost.get(post.id) ?? [];
+          const deleteAction = deletePostAction.bind(null, post.id);
           return (
             <div key={post.id} className="rounded-lg border border-border p-4">
-              <p className="mb-1 text-sm text-muted-foreground">
-                {post.submitted_by_name} · {new Date(post.created_at).toLocaleString()}
-              </p>
+              <div className="mb-1 flex items-start justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {post.submitted_by_name} · {new Date(post.created_at).toLocaleString()}
+                </p>
+                {profile.role === "admin" && <DeleteSocialPhotoPostButton action={deleteAction} />}
+              </div>
               {post.caption && <p className="mb-3 text-sm">{post.caption}</p>}
               <div className="flex flex-wrap gap-3">
                 {postPhotos.map((photo) => {
@@ -78,14 +83,22 @@ export default async function SocialPhotosPage({
                         )}
                       </div>
                       {canMark && (
-                        <form action={toggleAction} className="mt-1">
-                          <button
-                            type="submit"
-                            className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium hover:border-accent"
+                        <div className="mt-1 flex flex-col gap-1">
+                          <a
+                            href={`${photo.url}?download`}
+                            className="block w-full rounded-md border border-border bg-white px-2 py-1 text-center text-xs font-medium hover:border-accent"
                           >
-                            {photo.used_for_socials ? "Undo" : "Mark used"}
-                          </button>
-                        </form>
+                            Download
+                          </a>
+                          <form action={toggleAction}>
+                            <button
+                              type="submit"
+                              className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium hover:border-accent"
+                            >
+                              {photo.used_for_socials ? "Undo" : "Mark used"}
+                            </button>
+                          </form>
+                        </div>
                       )}
                     </div>
                   );

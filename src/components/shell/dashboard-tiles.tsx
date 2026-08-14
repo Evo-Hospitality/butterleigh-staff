@@ -5,10 +5,31 @@ import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/type
 // Add an entry here for each future mini-app.
 const TILES = [
   {
+    href: "/tasks",
+    label: "Tasks",
+    description: "Create one-off or recurring tasks for yourself or others",
+    icon: CheckSquare,
+    show: (_profile: Profile) => true,
+  },
+  {
     href: "/holiday",
     label: "Holiday",
     description: "Request holiday, request a day in lieu, check your balance",
     icon: CalendarDays,
+    show: (_profile: Profile) => true,
+  },
+  {
+    href: "/social-photos",
+    label: "Photos for socials",
+    description: "Submit photos for the company's social media accounts",
+    icon: Camera,
+    show: (_profile: Profile) => true,
+  },
+  {
+    href: "/events",
+    label: "Event ideas",
+    description: "Suggest an event and see what's been approved",
+    icon: PartyPopper,
     show: (_profile: Profile) => true,
   },
   {
@@ -26,32 +47,11 @@ const TILES = [
     show: (_profile: Profile) => true,
   },
   {
-    href: "/events",
-    label: "Event ideas",
-    description: "Suggest an event and see what's been approved",
-    icon: PartyPopper,
-    show: (_profile: Profile) => true,
-  },
-  {
     href: "/actions",
     label: "Actions",
     description: "Raise and track things assigned between managers/admins",
     icon: ClipboardList,
     show: isManagerOrAdmin,
-  },
-  {
-    href: "/tasks",
-    label: "Tasks",
-    description: "Create one-off or recurring tasks for yourself or others",
-    icon: CheckSquare,
-    show: (_profile: Profile) => true,
-  },
-  {
-    href: "/social-photos",
-    label: "Photos for socials",
-    description: "Submit photos for the company's social media accounts",
-    icon: Camera,
-    show: (_profile: Profile) => true,
   },
 ];
 
