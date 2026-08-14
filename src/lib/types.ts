@@ -208,3 +208,40 @@ export type ActionItemUpdateEntry = {
   note: string;
   created_at: string;
 };
+
+export type RecurrenceUnit = "days" | "weeks" | "months";
+export type TaskStatus = "pending" | "awaiting_review" | "done";
+export type TaskReviewOutcome = "done" | "sent_back";
+
+export type Task = {
+  id: string;
+  title: string;
+  description: string | null;
+  created_by: string | null;
+  created_by_name: string;
+  assigned_to: string | null;
+  assigned_to_name: string;
+  due_date: string | null;
+  due_time: string | null;
+  recurrence_unit: RecurrenceUnit | null;
+  recurrence_value: number | null;
+  is_active: boolean;
+  status: TaskStatus;
+  completed_at: string | null;
+  reviewed_at: string | null;
+  reminder_sent_at: string | null;
+  created_at: string;
+};
+
+export type TaskReview = {
+  id: string;
+  task_id: string;
+  outcome: TaskReviewOutcome;
+  completed_by: string | null;
+  completed_by_name: string;
+  reviewed_by: string | null;
+  reviewed_by_name: string;
+  note: string | null;
+  completed_at: string;
+  reviewed_at: string;
+};

@@ -24,6 +24,9 @@ export function Nav({ profile }: { profile: Profile }) {
           <Link href="/events" className="hover:text-accent">
             Events
           </Link>
+          <Link href="/tasks" className="hover:text-accent">
+            Tasks
+          </Link>
           {canAccessMaintenance && (
             <Link href="/maintenance" className="hover:text-accent">
               Maintenance

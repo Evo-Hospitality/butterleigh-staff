@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenText, CalendarDays, ClipboardList, PartyPopper, Wrench } from "lucide-react";
+import { BookOpenText, CalendarDays, CheckSquare, ClipboardList, PartyPopper, Wrench } from "lucide-react";
 import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -38,6 +38,13 @@ const TILES = [
     description: "Raise and track things assigned between managers/admins",
     icon: ClipboardList,
     show: isManagerOrAdmin,
+  },
+  {
+    href: "/tasks",
+    label: "Tasks",
+    description: "Create one-off or recurring tasks for yourself or others",
+    icon: CheckSquare,
+    show: (_profile: Profile) => true,
   },
 ];
 
