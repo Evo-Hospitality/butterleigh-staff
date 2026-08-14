@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BookOpenText, CalendarDays, PartyPopper, Wrench } from "lucide-react";
-import { canAccessMaintenance, type Profile } from "@/lib/types";
+import { BookOpenText, CalendarDays, ClipboardList, PartyPopper, Wrench } from "lucide-react";
+import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
 const TILES = [
@@ -31,6 +31,13 @@ const TILES = [
     description: "Suggest an event and see what's been approved",
     icon: PartyPopper,
     show: (_profile: Profile) => true,
+  },
+  {
+    href: "/actions",
+    label: "Actions",
+    description: "Raise and track things assigned between managers/admins",
+    icon: ClipboardList,
+    show: isManagerOrAdmin,
   },
 ];
 

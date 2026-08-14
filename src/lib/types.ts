@@ -181,3 +181,30 @@ export type EventSuggestionPhoto = {
   sort_order: number;
   created_at: string;
 };
+
+export type ActionItemStatus = "open" | "closed";
+export type ActionItemUpdateKind = "note" | "reassigned" | "status_changed";
+
+export type ActionItem = {
+  id: string;
+  submitted_by: string | null;
+  submitted_by_name: string;
+  assigned_to: string | null;
+  assigned_to_name: string;
+  title: string;
+  notes: string | null;
+  photo_url: string | null;
+  status: ActionItemStatus;
+  created_at: string;
+  closed_at: string | null;
+};
+
+export type ActionItemUpdateEntry = {
+  id: string;
+  action_id: string;
+  author_id: string | null;
+  author_name: string;
+  kind: ActionItemUpdateKind;
+  note: string;
+  created_at: string;
+};

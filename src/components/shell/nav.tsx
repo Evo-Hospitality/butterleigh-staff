@@ -30,6 +30,11 @@ export function Nav({ profile }: { profile: Profile }) {
             </Link>
           )}
           {canApprove && (
+            <Link href="/actions" className="hover:text-accent">
+              Actions
+            </Link>
+          )}
+          {canApprove && (
             <Link href="/holiday/approvals" className="hover:text-accent">
               Approvals
             </Link>

@@ -76,3 +76,14 @@ export async function requireEventsManage() {
   }
   return result;
 }
+
+// Whole-app gate for Actions — unlike Maintenance there's no separate
+// per-person opt-in flag; eligibility just *is* "manager or admin", since
+// only they can ever raise or own one.
+export async function requireActionItemsAccess() {
+  const result = await requireUser();
+  if (!isManagerOrAdmin(result.profile)) {
+    redirect("/");
+  }
+  return result;
+}
