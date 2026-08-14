@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenText, CalendarDays, CheckSquare, ClipboardList, PartyPopper, Wrench } from "lucide-react";
+import { BookOpenText, Camera, CalendarDays, CheckSquare, ClipboardList, PartyPopper, Wrench } from "lucide-react";
 import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -44,6 +44,13 @@ const TILES = [
     label: "Tasks",
     description: "Create one-off or recurring tasks for yourself or others",
     icon: CheckSquare,
+    show: (_profile: Profile) => true,
+  },
+  {
+    href: "/social-photos",
+    label: "Photos for socials",
+    description: "Submit photos for the company's social media accounts",
+    icon: Camera,
     show: (_profile: Profile) => true,
   },
 ];

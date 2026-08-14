@@ -245,3 +245,25 @@ export type TaskReview = {
   completed_at: string;
   reviewed_at: string;
 };
+
+export type SocialPhotoPost = {
+  id: string;
+  submitted_by: string | null;
+  submitted_by_name: string;
+  caption: string | null;
+  created_at: string;
+};
+
+export type SocialPhoto = {
+  id: string;
+  post_id: string;
+  submitted_by: string | null;
+  submitted_by_name: string;
+  url: string;
+  sort_order: number;
+  used_for_socials: boolean;
+  used_at: string | null;
+  used_by: string | null;
+  used_by_name: string | null;
+  created_at: string;
+};
