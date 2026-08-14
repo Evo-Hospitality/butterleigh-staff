@@ -1,8 +1,18 @@
 import Link from "next/link";
 import { requireActionItemsAccess } from "@/lib/auth";
-import type { ActionItem } from "@/lib/types";
+import type { ActionItem, ActionItemUpdateEntry } from "@/lib/types";
 
-function ActionTable({ items, empty, showClosedDate }: { items: ActionItem[]; empty: string; showClosedDate?: boolean }) {
+function ActionTable({
+  items,
+  empty,
+  showClosedDate,
+  latestUpdates,
+}: {
+  items: ActionItem[];
+  empty: string;
+  showClosedDate?: boolean;
+  latestUpdates?: Map<string, ActionItemUpdateEntry>;
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <table className="w-full text-sm">
@@ -21,6 +31,11 @@ function ActionTable({ items, empty, showClosedDate }: { items: ActionItem[]; em
                 <Link href={`/actions/${a.id}`} className="font-medium hover:text-accent">
                   {a.title}
                 </Link>
+                {latestUpdates?.has(a.id) && (
+                  <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">
+                    {latestUpdates.get(a.id)!.author_name}: {latestUpdates.get(a.id)!.note}
+                  </p>
+                )}
               </td>
               <td className="px-4 py-2">{a.submitted_by_name}</td>
               <td className="px-4 py-2">{a.assigned_to_name}</td>
@@ -56,6 +71,22 @@ export default async function ActionsPage() {
   const open = (items ?? []).filter((a) => a.status === "open");
   const closed = (items ?? []).filter((a) => a.status === "closed");
 
+  const openIds = open.map((a) => a.id);
+  const latestUpdates = new Map<string, ActionItemUpdateEntry>();
+  if (openIds.length > 0) {
+    const { data: updates } = await supabase
+      .from("action_item_updates")
+      .select("*")
+      .in("action_id", openIds)
+      .order("created_at", { ascending: false })
+      .returns<ActionItemUpdateEntry[]>();
+    for (const u of updates ?? []) {
+      if (!latestUpdates.has(u.action_id)) {
+        latestUpdates.set(u.action_id, u);
+      }
+    }
+  }
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -70,7 +101,7 @@ export default async function ActionsPage() {
 
       <h2 className="mb-3 text-lg font-bold text-primary">Open</h2>
       <div className="mb-8">
-        <ActionTable items={open} empty="Nothing open right now." />
+        <ActionTable items={open} empty="Nothing open right now." latestUpdates={latestUpdates} />
       </div>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Closed</h2>
