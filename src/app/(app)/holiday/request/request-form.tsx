@@ -1,9 +1,29 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import type { Profile } from "@/lib/types";
 import { countWorkingDays } from "@/lib/holiday/working-days";
 import { requestLeave } from "./actions";
+
+// Must be a child of the <form>, not the component rendering it — that's
+// what useFormStatus requires. Disables the button once submission starts
+// so a double-click can't fire the action twice before the redirect lands;
+// the RPC (request_leave, see 0023_request_leave_rpc.sql) is what actually
+// makes duplicate submissions safe, this just stops the obvious case at
+// the source.
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {pending ? "Submitting…" : "Submit request"}
+    </button>
+  );
+}
 
 export function RequestForm({ profile }: { profile: Profile }) {
   const [startDate, setStartDate] = useState("");
@@ -79,12 +99,7 @@ export function RequestForm({ profile }: { profile: Profile }) {
         />
       </div>
 
-      <button
-        type="submit"
-        className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-      >
-        Submit request
-      </button>
+      <SubmitButton />
     </form>
   );
 }

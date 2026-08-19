@@ -46,10 +46,20 @@ export default async function HolidayPage() {
       : Promise.resolve({ data: [] as LieuRequest[] }),
   ]);
 
-  const remaining = isSalaried
-    ? (balance?.brought_forward ?? 0) + (balance?.base_allowance ?? profile.annual_allowance_days ?? 0) +
-      (balance?.lieu_days_earned ?? 0) - (balance?.used_days ?? 0)
-    : (balance?.brought_forward ?? 0) + (balance?.accrued_hours ?? 0) - (balance?.used_hours ?? 0);
+  // Same "pending requests reserve balance" rule request_leave() enforces
+  // (0023_request_leave_rpc.sql) — shown here too so this number always
+  // matches what a new submission would actually be allowed.
+  const pendingAmount = (leaveRequests ?? [])
+    .filter(
+      (r) => r.status === "pending" && !r.is_unpaid && new Date(r.start_date + "T00:00:00").getFullYear() === year,
+    )
+    .reduce((sum, r) => sum + Number(r.amount), 0);
+
+  const remaining =
+    (isSalaried
+      ? (balance?.brought_forward ?? 0) + (balance?.base_allowance ?? profile.annual_allowance_days ?? 0) +
+        (balance?.lieu_days_earned ?? 0) - (balance?.used_days ?? 0)
+      : (balance?.brought_forward ?? 0) + (balance?.accrued_hours ?? 0) - (balance?.used_hours ?? 0)) - pendingAmount;
 
   const unit = isSalaried ? "days" : "hours";
 
@@ -72,6 +82,7 @@ export default async function HolidayPage() {
             Brought forward {balance.brought_forward} + {isSalaried
               ? `allowance ${balance.base_allowance} + lieu earned ${balance.lieu_days_earned}`
               : `accrued ${balance.accrued_hours.toFixed(2)}`} − used {isSalaried ? balance.used_days : balance.used_hours.toFixed(2)}
+            {pendingAmount > 0 && ` − ${pendingAmount.toFixed(2)} reserved by requests awaiting approval`}
           </p>
         )}
       </div>
