@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { StockTake, StockTakeEntry } from "@/lib/types";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteStockTakeDraftAction, deleteSubmittedStockTakeAction } from "./actions";
 
 export default async function StockTakePage() {
@@ -67,11 +68,11 @@ export default async function StockTakePage() {
                       <Link href={`/stocktake/${s.id}/edit`} className="mr-4 text-accent hover:underline">
                         Resume
                       </Link>
-                      <form action={deleteStockTakeDraftAction.bind(null, s.id)} className="inline">
-                        <button type="submit" className="text-red-600 hover:underline">
-                          Discard
-                        </button>
-                      </form>
+                      <ConfirmDeleteButton
+                        action={deleteStockTakeDraftAction.bind(null, s.id)}
+                        label="Discard"
+                        confirmMessage={`Discard this ${s.type} draft from ${s.stock_date}? Everything counted so far will be lost.`}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -110,11 +111,11 @@ export default async function StockTakePage() {
                 <td className="px-4 py-2">£{(valueByStockTake.get(s.id) ?? 0).toFixed(2)}</td>
                 <td className="px-4 py-2 text-right">
                   {profile.role === "admin" && (
-                    <form action={deleteSubmittedStockTakeAction.bind(null, s.id)}>
-                      <button type="submit" className="text-red-600 hover:underline">
-                        Delete
-                      </button>
-                    </form>
+                    <ConfirmDeleteButton
+                      action={deleteSubmittedStockTakeAction.bind(null, s.id)}
+                      label="Delete"
+                      confirmMessage={`Permanently delete the ${s.type} stocktake from ${s.stock_date}? This cannot be undone.`}
+                    />
                   )}
                 </td>
               </tr>

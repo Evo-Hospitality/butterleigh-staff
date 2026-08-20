@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import type { StockTake, StockTakeEntry, StockTakeQuantity } from "@/lib/types";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteSubmittedStockTakeAction } from "../actions";
 
 export default async function StockTakeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -131,13 +132,12 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
       </div>
 
       {profile.role === "admin" && (
-        <form
+        <ConfirmDeleteButton
           action={deleteSubmittedStockTakeAction.bind(null, id)}
-        >
-          <button type="submit" className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100">
-            Delete this stocktake
-          </button>
-        </form>
+          label="Delete this stocktake"
+          confirmMessage={`Permanently delete the ${stockTake.type} stocktake from ${stockTake.stock_date}? This cannot be undone.`}
+          className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+        />
       )}
     </div>
   );
