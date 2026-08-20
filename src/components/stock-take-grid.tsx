@@ -252,12 +252,16 @@ export function StockTakeGrid({
           <table className="w-full text-sm">
             <thead className="bg-muted text-left text-muted-foreground">
               <tr>
-                <th colSpan={3 + locations.length} className="px-4 py-2 font-bold text-primary">
+                <th colSpan={5 + locations.length} className="px-4 py-2 font-bold text-primary">
                   {groupName}
                 </th>
               </tr>
               <tr>
-                <th className="px-4 py-2 font-medium">Name</th>
+                {/* Frozen so the item you're counting stays visible while
+                    scrolling the location columns sideways on a phone. */}
+                <th className="sticky left-0 z-10 bg-muted px-3 py-2 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                  Name
+                </th>
                 <th className="px-2 py-2 font-medium">Unit</th>
                 <th className="px-2 py-2 font-medium">Unit price</th>
                 {locations.map((loc) => (
@@ -272,7 +276,12 @@ export function StockTakeGrid({
             <tbody>
               {groupRows.map((row) => (
                 <tr key={row.key} className="border-t border-border">
-                  <td className="whitespace-nowrap px-4 py-1.5">{row.name}</td>
+                  <td className="sticky left-0 z-10 bg-background px-3 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                    {/* Fixed width + wrapping rather than nowrap: a frozen
+                        column sized to the longest wine name would swallow
+                        most of a phone screen. */}
+                    <div className="w-28 break-words sm:w-56">{row.name}</div>
+                  </td>
                   <td className="px-2 py-1.5">
                     {addingUnitFor === row.key ? (
                       <input

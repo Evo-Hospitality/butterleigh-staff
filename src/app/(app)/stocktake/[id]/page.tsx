@@ -84,7 +84,11 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
                 </th>
               </tr>
               <tr>
-                <th className="px-4 py-2 font-medium">Name</th>
+                {/* Frozen, same as the counting grid — keeps the item
+                    visible while scrolling location columns on a phone. */}
+                <th className="sticky left-0 z-10 bg-muted px-3 py-2 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                  Name
+                </th>
                 <th className="px-2 py-2 font-medium">Unit</th>
                 <th className="px-2 py-2 font-medium">Unit price</th>
                 {locationOrder.map((loc) => (
@@ -101,7 +105,9 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
                 const qs = quantitiesByEntryId.get(entry.id);
                 return (
                   <tr key={entry.id} className="border-t border-border">
-                    <td className="whitespace-nowrap px-4 py-1.5">{entry.item_name}</td>
+                    <td className="sticky left-0 z-10 bg-background px-3 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
+                      <div className="w-28 break-words sm:w-56">{entry.item_name}</div>
+                    </td>
                     <td className="px-2 py-1.5">{entry.unit ?? "—"}</td>
                     <td className="px-2 py-1.5">{entry.unit_price != null ? `£${entry.unit_price.toFixed(2)}` : "—"}</td>
                     {locationOrder.map((loc) => (
