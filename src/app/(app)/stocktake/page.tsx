@@ -25,6 +25,9 @@ export default async function StockTakePage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-primary">Stocktake</h1>
         <div className="flex items-center gap-2">
+          <Link href="/stocktake/report" className="text-sm text-muted-foreground hover:text-accent">
+            Value report
+          </Link>
           <Link href="/stocktake/changes" className="mr-2 text-sm text-muted-foreground hover:text-accent">
             Unit &amp; price history
           </Link>
