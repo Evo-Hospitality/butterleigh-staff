@@ -267,3 +267,82 @@ export type SocialPhoto = {
   used_by_name: string | null;
   created_at: string;
 };
+
+export type StockType = "wet" | "dry";
+export type StockTakeStatus = "draft" | "submitted";
+
+export type StockLocation = {
+  id: string;
+  type: StockType;
+  name: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type StockUnit = {
+  id: string;
+  type: StockType;
+  name: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type StockItem = {
+  id: string;
+  type: StockType;
+  group_name: string;
+  name: string;
+  unit: string | null;
+  unit_price: number | null;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+};
+
+export type StockTake = {
+  id: string;
+  type: StockType;
+  status: StockTakeStatus;
+  stock_date: string;
+  submitted_by: string | null;
+  submitted_by_name: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  submitted_at: string | null;
+};
+
+export type StockTakeEntry = {
+  id: string;
+  stock_take_id: string;
+  stock_item_id: string | null;
+  group_name: string;
+  item_name: string;
+  unit: string | null;
+  unit_price: number | null;
+  total_qty: number;
+  value: number;
+  created_at: string;
+};
+
+export type StockTakeQuantity = {
+  id: string;
+  stock_take_entry_id: string;
+  location_id: string | null;
+  location_name: string;
+  quantity: number;
+  created_at: string;
+};
+
+export type StockItemChangeEntry = {
+  id: string;
+  stock_item_id: string | null;
+  item_name: string;
+  field: "unit" | "unit_price";
+  old_value: string | null;
+  new_value: string | null;
+  changed_by: string | null;
+  changed_by_name: string;
+  stock_take_id: string | null;
+  created_at: string;
+};

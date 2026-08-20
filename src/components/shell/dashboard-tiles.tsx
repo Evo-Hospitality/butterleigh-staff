@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenText, Camera, CalendarDays, CheckSquare, ClipboardList, PartyPopper, Wrench } from "lucide-react";
+import { BookOpenText, Camera, CalendarDays, CheckSquare, ClipboardList, Package, PartyPopper, Wrench } from "lucide-react";
 import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -52,6 +52,13 @@ const TILES = [
     description: "Raise and track things assigned between managers/admins",
     icon: ClipboardList,
     show: isManagerOrAdmin,
+  },
+  {
+    href: "/stocktake",
+    label: "Stocktake",
+    description: "Count wet or dry stock, valued by location",
+    icon: Package,
+    show: (_profile: Profile) => true,
   },
 ];
 
