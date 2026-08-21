@@ -113,6 +113,17 @@ export async function updateStaffEmail(staffId: string, newEmail: string) {
 // started; for a real leaver, deactivate them instead (keeps their history).
 export async function deleteStaff(staffId: string) {
   const admin = createAdminClient();
+
+  // Their employee_documents rows go with the cascade, but the files behind
+  // them don't — and a private bucket quietly keeping someone's HMRC
+  // checklist after they've been deleted is exactly the wrong outcome.
+  const { data: files } = await admin.storage.from("employee-documents").list(staffId);
+  if (files?.length) {
+    await admin.storage
+      .from("employee-documents")
+      .remove(files.map((f) => `${staffId}/${f.name}`));
+  }
+
   const { error } = await admin.auth.admin.deleteUser(staffId);
   if (error) {
     throw new Error(error.message);

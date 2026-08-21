@@ -3,9 +3,15 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { readBankFields, readDetailFields } from "@/lib/onboarding/details";
+import {
+  documentsStillUploading,
+  readBankFields,
+  readDetailFields,
+  readPendingDocuments,
+  saveEmployeeDocuments,
+} from "@/lib/onboarding/details";
 import { notifyBankChangeDecided, notifyOnboardingDecided } from "@/lib/onboarding/notifications";
-import type { BankChangeRequest } from "@/lib/types";
+import type { BankChangeRequest, EmployeeDocument } from "@/lib/types";
 
 function fail(staffId: string, message: string): never {
   redirect(`/admin/onboarding/${staffId}?error=${encodeURIComponent(message)}`);
@@ -204,4 +210,62 @@ export async function decideBankChangeAction(formData: FormData) {
 
   revalidatePath("/admin/onboarding");
   redirect(approve ? "/admin/onboarding?bankapproved=1" : "/admin/onboarding?bankrejected=1");
+}
+
+// Attaching paperwork on someone else's behalf — the usual case being an
+// existing member of staff whose checklist arrived on paper or by email.
+export async function uploadEmployeeDocumentsAction(formData: FormData) {
+  const { supabase, user, profile } = await requireAdmin();
+  const staffId = String(formData.get("staff_id") ?? "");
+  if (!staffId) {
+    redirect("/admin/onboarding");
+  }
+
+  if (documentsStillUploading(formData)) {
+    fail(staffId, "Hang on a moment — a file is still uploading.");
+  }
+
+  const documents = readPendingDocuments(formData);
+  if (documents.length === 0) {
+    fail(staffId, "Choose at least one file first.");
+  }
+
+  try {
+    await saveEmployeeDocuments(supabase, staffId, documents, {
+      id: user.id,
+      name: profile.full_name,
+    });
+  } catch (err) {
+    fail(staffId, err instanceof Error ? err.message : "Could not save the uploaded files.");
+  }
+
+  revalidatePath(`/admin/onboarding/${staffId}`);
+  redirect(`/admin/onboarding/${staffId}?saved=1`);
+}
+
+// Takes the file with it, not just the row — an orphaned document in a
+// private bucket is still someone's National Insurance number sitting there.
+export async function deleteEmployeeDocumentAction(documentId: string, staffId: string) {
+  const { supabase } = await requireAdmin();
+  if (!documentId || !staffId) {
+    redirect("/admin/onboarding");
+  }
+
+  const { data: document } = await supabase
+    .from("employee_documents")
+    .select("*")
+    .eq("id", documentId)
+    .maybeSingle<EmployeeDocument>();
+  if (!document) {
+    redirect(`/admin/onboarding/${staffId}`);
+  }
+
+  const { error } = await supabase.from("employee_documents").delete().eq("id", documentId);
+  if (error) {
+    fail(staffId, error.message);
+  }
+  await supabase.storage.from("employee-documents").remove([document.path]);
+
+  revalidatePath(`/admin/onboarding/${staffId}`);
+  redirect(`/admin/onboarding/${staffId}?saved=1`);
 }

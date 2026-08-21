@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
-import { signedDocumentUrl } from "@/lib/onboarding/details";
-import type { EmployeeDetails, Profile } from "@/lib/types";
+import { documentsWithUrls } from "@/lib/onboarding/details";
+import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
 import {
   approveOnboardingAction,
+  deleteEmployeeDocumentAction,
   saveEmployeeDetailsAction,
   sendBackOnboardingAction,
   setOnboardingRequiredAction,
+  uploadEmployeeDocumentsAction,
 } from "../actions";
 
 function Field({
@@ -56,17 +60,19 @@ export default async function AdminEmployeeDetailsPage({
     notFound();
   }
 
-  const { data: details } = await supabase
-    .from("employee_details")
-    .select("*")
-    .eq("staff_id", id)
-    .maybeSingle<EmployeeDetails>();
+  const [{ data: details }, { data: documents }] = await Promise.all([
+    supabase.from("employee_details").select("*").eq("staff_id", id).maybeSingle<EmployeeDetails>(),
+    supabase
+      .from("employee_documents")
+      .select("*")
+      .eq("staff_id", id)
+      .order("created_at")
+      .returns<EmployeeDocument[]>(),
+  ]);
 
   // Minted per view and short-lived — the bucket is private, so there is no
   // URL that keeps working after this page is closed.
-  const checklistUrl = details?.hmrc_checklist_path
-    ? await signedDocumentUrl(details.hmrc_checklist_path)
-    : null;
+  const uploaded = await documentsWithUrls(documents ?? []);
 
   const awaitingReview = person.onboarding_status === "submitted";
 
@@ -122,19 +128,56 @@ export default async function AdminEmployeeDetailsPage({
       )}
 
       <section className="mb-8">
-        <h2 className="mb-2 text-lg font-bold text-primary">HMRC Starter Checklist</h2>
-        {checklistUrl ? (
-          <a
-            href={checklistUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-semibold text-accent hover:underline"
-          >
-            Open the uploaded checklist
-          </a>
+        <h2 className="mb-1 text-lg font-bold text-primary">Documents</h2>
+        <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
+          Their HMRC Starter Checklist, and anything that came with it. Often several photos of a
+          printed form rather than one PDF. You can add files here yourself — for someone whose
+          paperwork arrived on paper or by email.
+        </p>
+
+        {uploaded.length === 0 ? (
+          <p className="mb-3 text-sm text-muted-foreground">Nothing uploaded.</p>
         ) : (
-          <p className="text-sm text-muted-foreground">Nothing uploaded.</p>
+          <ul className="mb-4 flex max-w-xl flex-col gap-2">
+            {uploaded.map((d) => (
+              <li
+                key={d.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
+              >
+                <span className="min-w-0 flex-1">
+                  {d.url ? (
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-accent hover:underline"
+                    >
+                      {d.file_name}
+                    </a>
+                  ) : (
+                    d.file_name
+                  )}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {formatDateTime(d.created_at)}
+                    {d.uploaded_by_name ? ` · ${d.uploaded_by_name}` : ""}
+                  </span>
+                </span>
+                <ConfirmDeleteButton
+                  action={deleteEmployeeDocumentAction.bind(null, d.id, person.id)}
+                  label="Delete"
+                  confirmMessage={`Delete "${d.file_name}"? This removes the file for good.`}
+                  className="text-xs font-semibold text-red-700 hover:underline"
+                />
+              </li>
+            ))}
+          </ul>
         )}
+
+        <form action={uploadEmployeeDocumentsAction} className="flex max-w-xl flex-col gap-3">
+          <input type="hidden" name="staff_id" value={person.id} />
+          <EmployeeDocumentPicker staffId={person.id} label="+ Add a file" />
+          <SubmitButton pendingLabel="Saving…">Save files</SubmitButton>
+        </form>
       </section>
 
       <section className="mb-8">

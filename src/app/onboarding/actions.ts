@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import {
+  documentsStillUploading,
   missingFields,
   readBankFields,
   readDetailFields,
-  uploadEmployeeDocument,
+  readPendingDocuments,
+  saveEmployeeDocuments,
 } from "@/lib/onboarding/details";
 import { notifyOnboardingSubmitted } from "@/lib/onboarding/notifications";
 import { updateStaffEmail } from "@/lib/holiday/staff";
@@ -38,26 +40,36 @@ export async function submitOnboardingAction(formData: FormData) {
     .eq("staff_id", user.id)
     .maybeSingle<EmployeeDetails>();
 
-  // Required first time round; on a resubmission the one already uploaded
-  // stands unless they choose a new file.
-  let checklistPath = existing?.hmrc_checklist_path ?? null;
-  const file = formData.get("hmrc_checklist");
-  if (file instanceof File && file.size > 0) {
-    try {
-      checklistPath = await uploadEmployeeDocument(supabase, user.id, file);
-    } catch (err) {
-      fail(err instanceof Error ? err.message : "Could not upload the checklist.");
-    }
+  if (documentsStillUploading(formData)) {
+    fail("Hang on a moment — a file is still uploading.");
   }
-  if (!checklistPath) {
+
+  // Already in storage by now; the picker uploads on selection. Anything
+  // attached on a previous attempt still counts, so a resubmission doesn't
+  // mean photographing the form again.
+  const newDocuments = readPendingDocuments(formData);
+  const { count: existingDocuments } = await supabase
+    .from("employee_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("staff_id", user.id);
+
+  if (newDocuments.length === 0 && !existingDocuments) {
     fail("The HMRC Starter Checklist is needed before we can process payroll.");
+  }
+
+  try {
+    await saveEmployeeDocuments(supabase, user.id, newDocuments, {
+      id: user.id,
+      name: profile.full_name,
+    });
+  } catch (err) {
+    fail(err instanceof Error ? err.message : "Could not save the uploaded files.");
   }
 
   const row = {
     staff_id: user.id,
     ...fields,
     ...bank,
-    hmrc_checklist_path: checklistPath,
     submitted_at: new Date().toISOString(),
     // Clear any previous send-back note, so the reviewer isn't reading a
     // stale reason against a fresh submission.

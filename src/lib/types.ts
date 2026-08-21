@@ -18,7 +18,6 @@ export type EmployeeDetails = {
   bank_name: string | null;
   bank_sort_code: string | null;
   bank_account_number: string | null;
-  hmrc_checklist_path: string | null;
   submitted_at: string | null;
   reviewed_by: string | null;
   reviewed_by_name: string | null;
@@ -26,6 +25,18 @@ export type EmployeeDetails = {
   review_note: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// The HMRC Starter Checklist and anything else that arrives with it —
+// often several photos of a printed form rather than one PDF.
+export type EmployeeDocument = {
+  id: string;
+  staff_id: string;
+  path: string;
+  file_name: string;
+  uploaded_by: string | null;
+  uploaded_by_name: string | null;
+  created_at: string;
 };
 
 export type BankChangeStatus = "pending" | "approved" | "rejected";

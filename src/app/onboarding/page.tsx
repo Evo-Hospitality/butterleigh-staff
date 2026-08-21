@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { BankFields, EmergencyFields, PersonalFields } from "@/components/employee-details-fields";
-import type { EmployeeDetails } from "@/lib/types";
+import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
+import { documentsWithUrls } from "@/lib/onboarding/details";
+import type { EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { submitOnboardingAction } from "./actions";
 
 export default async function OnboardingPage({
@@ -18,11 +20,17 @@ export default async function OnboardingPage({
     redirect("/");
   }
 
-  const { data: details } = await supabase
-    .from("employee_details")
-    .select("*")
-    .eq("staff_id", user.id)
-    .maybeSingle<EmployeeDetails>();
+  const [{ data: details }, { data: documents }] = await Promise.all([
+    supabase.from("employee_details").select("*").eq("staff_id", user.id).maybeSingle<EmployeeDetails>(),
+    supabase
+      .from("employee_documents")
+      .select("*")
+      .eq("staff_id", user.id)
+      .order("created_at")
+      .returns<EmployeeDocument[]>(),
+  ]);
+
+  const uploaded = await documentsWithUrls(documents ?? []);
 
   const waiting = profile.onboarding_status === "submitted";
   const sentBack = profile.onboarding_status === "pending" && !!details?.review_note;
@@ -86,18 +94,37 @@ export default async function OnboardingPage({
             </a>
             , download the completed copy, and upload it here. Ignore the bit about working
             overseas. Without this we can&apos;t run your payroll.
-            {details?.hmrc_checklist_path && (
-              <span className="mt-1 block text-green-700">
-                You&apos;ve already uploaded one — only choose a file if you&apos;re replacing it.
-              </span>
-            )}
           </p>
-          <input
-            type="file"
-            name="hmrc_checklist"
-            accept=".pdf,image/*"
-            className="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-white file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary hover:file:border-accent hover:file:text-accent"
-          />
+          <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
+            If you printed it and filled it in by hand, photograph every page and add them all —
+            you can attach as many files as you need.
+          </p>
+
+          {uploaded.length > 0 && (
+            <div className="mb-3">
+              <p className="mb-1 text-sm font-medium text-green-700">Already uploaded</p>
+              <ul className="flex flex-col gap-1 text-sm">
+                {uploaded.map((d) => (
+                  <li key={d.id}>
+                    {d.url ? (
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent hover:underline"
+                      >
+                        {d.file_name}
+                      </a>
+                    ) : (
+                      d.file_name
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <EmployeeDocumentPicker staffId={user.id} label="+ Add a page" />
         </section>
 
         <section>

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { EmployeeDocument } from "@/lib/types";
 
 // Reading these fields out of a form, in one place, so the onboarding form
 // and the later "my details" edits can't drift apart on trimming or which
@@ -107,21 +108,63 @@ export async function signedDocumentUrl(path: string, seconds = 300): Promise<st
   return data?.signedUrl ?? null;
 }
 
-// Uploads go to <uid>/<random>.<ext>, which is what the storage policy
-// checks — the folder name must be the uploader's own id.
-export async function uploadEmployeeDocument(
+// The picker has already put the files in storage by the time the form is
+// submitted; all that's left is to record them. Anything malformed is
+// dropped rather than throwing — a bad hidden field shouldn't lose the rest
+// of a submission.
+export type PendingDocument = { path: string; file_name: string };
+
+export function readPendingDocuments(formData: FormData): PendingDocument[] {
+  const raw = String(formData.get("documents_json") ?? "");
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (d): d is PendingDocument =>
+          !!d &&
+          typeof d === "object" &&
+          typeof (d as PendingDocument).path === "string" &&
+          !!(d as PendingDocument).path,
+      )
+      .map((d) => ({ path: d.path, file_name: d.file_name || "Document" }));
+  } catch {
+    return [];
+  }
+}
+
+export function documentsStillUploading(formData: FormData): boolean {
+  return String(formData.get("documents_uploading") ?? "") === "1";
+}
+
+export async function saveEmployeeDocuments(
   supabase: SupabaseClient,
   staffId: string,
-  file: File,
-): Promise<string> {
-  const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
-  const path = `${staffId}/${crypto.randomUUID()}.${ext}`;
+  documents: PendingDocument[],
+  uploadedBy: { id: string; name: string },
+): Promise<void> {
+  if (documents.length === 0) return;
 
-  const { error } = await supabase.storage
-    .from("employee-documents")
-    .upload(path, file, { contentType: file.type });
+  const { error } = await supabase.from("employee_documents").insert(
+    documents.map((d) => ({
+      staff_id: staffId,
+      path: d.path,
+      file_name: d.file_name,
+      uploaded_by: uploadedBy.id,
+      uploaded_by_name: uploadedBy.name,
+    })),
+  );
   if (error) {
     throw new Error(error.message);
   }
-  return path;
+}
+
+// Each row gets its own short-lived link, minted per page view.
+export async function documentsWithUrls(
+  documents: EmployeeDocument[],
+): Promise<(EmployeeDocument & { url: string | null })[]> {
+  return Promise.all(
+    documents.map(async (d) => ({ ...d, url: await signedDocumentUrl(d.path) })),
+  );
 }
