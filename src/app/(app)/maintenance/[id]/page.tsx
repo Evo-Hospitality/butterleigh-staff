@@ -5,6 +5,7 @@ import { canBeAssignedMaintenance, type MaintenanceRequest, type MaintenanceUpda
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatDateTime } from "@/lib/format";
 
 function StatusBadge({ status }: { status: string }) {
   const style = status === "open" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
@@ -163,7 +164,7 @@ export default async function MaintenanceDetailPage({
         {(updates ?? []).map((u) => (
           <div key={u.id} className="rounded-md border border-border p-3 text-sm">
             <p className="mb-1 text-xs text-muted-foreground">
-              {u.author_name} · {new Date(u.created_at).toLocaleString()}
+              {u.author_name} · {formatDateTime(u.created_at)}
               {KIND_LABEL[u.kind] && ` · ${KIND_LABEL[u.kind]}`}
             </p>
             <p>{u.note}</p>

@@ -246,6 +246,29 @@ export type TaskReview = {
   reviewed_at: string;
 };
 
+export type CheckinGroup = {
+  id: string;
+  name: string;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+};
+
+export type CheckinItem = {
+  id: string;
+  group_id: string;
+  title: string;
+  notes: string | null;
+  created_by: string | null;
+  created_by_name: string;
+  discussed: boolean;
+  discussed_at: string | null;
+  discussed_by: string | null;
+  discussed_by_name: string | null;
+  outcome: string | null;
+  created_at: string;
+};
+
 export type SocialPhotoPost = {
   id: string;
   submitted_by: string | null;

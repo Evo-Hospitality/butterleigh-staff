@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import type { ImpersonationLogEntry } from "@/lib/types";
+import { formatDateTime } from "@/lib/format";
 
 function formatDuration(startedAt: string, endedAt: string | null): string {
   if (!endedAt) return "still active";
@@ -43,7 +44,7 @@ export default async function ActivityLogPage() {
                 <td className="px-4 py-2">{entry.admin_name}</td>
                 <td className="px-4 py-2">{entry.target_name}</td>
                 <td className="px-4 py-2 text-muted-foreground">
-                  {new Date(entry.started_at).toLocaleString()}
+                  {formatDateTime(entry.started_at)}
                 </td>
                 <td className="px-4 py-2">{formatDuration(entry.started_at, entry.ended_at)}</td>
               </tr>

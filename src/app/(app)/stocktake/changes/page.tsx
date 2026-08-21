@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { StockItemChangeEntry, StockType } from "@/lib/types";
+import { formatDateTime } from "@/lib/format";
 
 function formatValue(field: string, value: string | null) {
   if (value === null || value === "") return "—";
@@ -280,7 +281,7 @@ export default async function StockChangesPage({
             {(changes ?? []).map((c) => (
               <tr key={c.id} className="border-t border-border">
                 <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
-                  {new Date(c.created_at).toLocaleString()}
+                  {formatDateTime(c.created_at)}
                 </td>
                 <td className="px-4 py-2">{c.item_name}</td>
                 <td className="px-4 py-2">{c.field === "unit_price" ? "Unit price" : "Unit"}</td>

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import type { StockTake, StockTakeEntry, StockTakeQuantity } from "@/lib/types";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteSubmittedStockTakeAction } from "../actions";
+import { formatDateOnly, formatDateTime } from "@/lib/format";
 
 export default async function StockTakeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { supabase, profile } = await requireUser();
@@ -70,8 +71,8 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
         <h1 className="text-2xl font-bold text-primary capitalize">{stockTake.type} stocktake</h1>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Stock as at {stockTake.stock_date} · Submitted by {stockTake.submitted_by_name}
-        {stockTake.submitted_at && <> on {new Date(stockTake.submitted_at).toLocaleString()}</>}
+        Stock as at {formatDateOnly(stockTake.stock_date)} · Submitted by {stockTake.submitted_by_name}
+        {stockTake.submitted_at && <> on {formatDateTime(stockTake.submitted_at)}</>}
         {stockTake.notes && <> · {stockTake.notes}</>}
       </p>
 
@@ -135,7 +136,7 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
         <ConfirmDeleteButton
           action={deleteSubmittedStockTakeAction.bind(null, id)}
           label="Delete this stocktake"
-          confirmMessage={`Permanently delete the ${stockTake.type} stocktake from ${stockTake.stock_date}? This cannot be undone.`}
+          confirmMessage={`Permanently delete the ${stockTake.type} stocktake from ${formatDateOnly(stockTake.stock_date)}? This cannot be undone.`}
           className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
         />
       )}

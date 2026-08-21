@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { BookOpenText, Camera, CalendarDays, CheckSquare, ClipboardList, Package, PartyPopper, Wrench } from "lucide-react";
+import {
+  BookOpenText,
+  Camera,
+  CalendarDays,
+  CheckSquare,
+  ClipboardCheck,
+  ClipboardList,
+  Package,
+  PartyPopper,
+  Wrench,
+} from "lucide-react";
 import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
 // Add an entry here for each future mini-app.
@@ -51,6 +61,13 @@ const TILES = [
     label: "Actions",
     description: "Raise and track things assigned between managers/admins",
     icon: ClipboardList,
+    show: isManagerOrAdmin,
+  },
+  {
+    href: "/checkins",
+    label: "Check Ins",
+    description: "Weekly management meeting: what's in flight, and the agenda",
+    icon: ClipboardCheck,
     show: isManagerOrAdmin,
   },
   {

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 type PreviewStatus = "post" | "salaried" | "unmatched";
 
@@ -312,7 +313,7 @@ export function HoursImportPanel({
                       {imp.skipped_salaried > 0 && ` · ${imp.skipped_salaried} salaried skipped`}
                       {imp.excluded_count > 0 && ` · ${imp.excluded_count} excluded`} ·{" "}
                       {Number(imp.total_hours).toFixed(2)} hours · by {imp.imported_by_name} on{" "}
-                      {new Date(imp.created_at).toLocaleDateString()}
+                      {formatDate(imp.created_at)}
                     </p>
                   </div>
                   <form

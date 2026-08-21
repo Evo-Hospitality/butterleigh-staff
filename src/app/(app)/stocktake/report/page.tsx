@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { StockTake, StockTakeEntry, StockType } from "@/lib/types";
+import { formatDateOnly } from "@/lib/format";
 
 type Point = {
   id: string;
@@ -224,7 +225,7 @@ export default async function StockValueReportPage({
                   const pct = prior && prior.value !== 0 ? (delta! / prior.value) * 100 : null;
                   return (
                     <tr key={p.id} className="border-t border-border">
-                      <td className="whitespace-nowrap px-4 py-2">{p.date}</td>
+                      <td className="whitespace-nowrap px-4 py-2">{formatDateOnly(p.date)}</td>
                       <td className="px-4 py-2">{p.submittedByName}</td>
                       <td className="px-4 py-2 font-medium">{money(p.value)}</td>
                       <td

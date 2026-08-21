@@ -4,6 +4,7 @@ import type { SocialPhoto, SocialPhotoPost } from "@/lib/types";
 import { DeleteSocialPhotoPostButton } from "@/components/delete-social-photo-post-button";
 import { SocialPhotoIncentive } from "@/components/social-photo-incentive";
 import { deletePostAction, toggleUsedAction } from "./actions";
+import { formatDateTime } from "@/lib/format";
 
 export default async function SocialPhotosPage({
   searchParams,
@@ -62,7 +63,7 @@ export default async function SocialPhotosPage({
             <div key={post.id} className="rounded-lg border border-border p-4">
               <div className="mb-1 flex items-start justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
-                  {post.submitted_by_name} · {new Date(post.created_at).toLocaleString()}
+                  {post.submitted_by_name} · {formatDateTime(post.created_at)}
                 </p>
                 {profile.role === "admin" && <DeleteSocialPhotoPostButton action={deleteAction} />}
               </div>

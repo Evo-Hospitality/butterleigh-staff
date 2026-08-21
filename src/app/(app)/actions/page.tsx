@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireActionItemsAccess } from "@/lib/auth";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { ActionItem, ActionItemUpdateEntry } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 function ActionTable({
   items,
@@ -41,7 +42,7 @@ function ActionTable({
               <td className="px-4 py-2">{a.submitted_by_name}</td>
               <td className="px-4 py-2">{a.assigned_to_name}</td>
               <td className="px-4 py-2 text-muted-foreground">
-                {new Date(showClosedDate ? (a.closed_at ?? a.created_at) : a.created_at).toLocaleDateString()}
+                {formatDate(showClosedDate ? (a.closed_at ?? a.created_at) : a.created_at)}
               </td>
             </tr>
           ))}

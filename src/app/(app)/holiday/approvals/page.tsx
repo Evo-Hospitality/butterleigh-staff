@@ -2,6 +2,7 @@ import { requireApprover } from "@/lib/auth";
 import type { LeaveRequest, LieuRequest, Profile } from "@/lib/types";
 import { approveLeave, rejectLeave, approveLieu, rejectLieu } from "./actions";
 import { RejectButton } from "./reject-button";
+import { formatDateOnly } from "@/lib/format";
 
 export default async function ApprovalsPage({
   searchParams,
@@ -61,7 +62,7 @@ export default async function ApprovalsPage({
             {pendingLeave.map((r) => (
               <tr key={r.id} className="border-t border-border">
                 <td className="px-4 py-2">{nameById.get(r.staff_id) ?? "—"}</td>
-                <td className="px-4 py-2">{r.start_date} to {r.end_date}</td>
+                <td className="px-4 py-2">{formatDateOnly(r.start_date)} to {formatDateOnly(r.end_date)}</td>
                 <td className="px-4 py-2">
                   {r.amount}
                   {r.is_unpaid && (
@@ -109,7 +110,7 @@ export default async function ApprovalsPage({
             {pendingLieu.map((r) => (
               <tr key={r.id} className="border-t border-border">
                 <td className="px-4 py-2">{nameById.get(r.staff_id) ?? "—"}</td>
-                <td className="px-4 py-2">{r.work_date}</td>
+                <td className="px-4 py-2">{formatDateOnly(r.work_date)}</td>
                 <td className="px-4 py-2 text-muted-foreground">{r.notes ?? "—"}</td>
                 <td className="px-4 py-2 text-right">
                   <div className="flex justify-end gap-3">

@@ -77,6 +77,16 @@ export async function requireEventsManage() {
   return result;
 }
 
+// Check Ins is the management meeting's own workspace — same population as
+// Actions, and for the same reason: only managers and admins are in the room.
+export async function requireCheckinsAccess() {
+  const result = await requireUser();
+  if (!isManagerOrAdmin(result.profile)) {
+    redirect("/");
+  }
+  return result;
+}
+
 // Whole-app gate for Actions — unlike Maintenance there's no separate
 // per-person opt-in flag; eligibility just *is* "manager or admin", since
 // only they can ever raise or own one.

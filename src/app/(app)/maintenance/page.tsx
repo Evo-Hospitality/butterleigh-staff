@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireMaintenanceAccess } from "@/lib/auth";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { MaintenanceRequest, MaintenanceUpdateEntry } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 function RequestTable({
   requests,
@@ -41,7 +42,7 @@ function RequestTable({
               <td className="px-4 py-2">{r.submitted_by_name}</td>
               <td className="px-4 py-2">{r.assigned_to_name}</td>
               <td className="px-4 py-2 text-muted-foreground">
-                {new Date(showClosedDate ? (r.closed_at ?? r.created_at) : r.created_at).toLocaleDateString()}
+                {formatDate(showClosedDate ? (r.closed_at ?? r.created_at) : r.created_at)}
               </td>
             </tr>
           ))}

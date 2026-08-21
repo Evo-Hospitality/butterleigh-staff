@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { LeaveBalance, Profile } from "@/lib/types";
 import { proratedAllowance } from "@/lib/holiday/proration";
 import { StaffTables, type StaffRow } from "@/components/staff-tables";
+import { formatDate } from "@/lib/format";
 
 // Index 0 = Sunday, matching profiles.working_days.
 const DAY_SHORT = ["Su", "M", "T", "W", "Th", "F", "Sa"];
@@ -36,7 +37,7 @@ export default async function StaffListPage() {
         : "12.07% accrual",
     manager: all.find((m) => m.id === person.manager_id)?.full_name ?? "—",
     role: person.role,
-    invited: person.invited_at ? new Date(person.invited_at).toLocaleDateString() : "Not invited",
+    invited: person.invited_at ? formatDate(person.invited_at) : "Not invited",
   });
 
   // No Status column — which table someone is in says it.

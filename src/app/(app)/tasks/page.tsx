@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { recurrenceLabel, isOverdue } from "@/lib/tasks/format";
 import type { Task } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 function TaskRow({ task }: { task: Task }) {
   const overdue = task.status === "pending" && isOverdue(task.due_date, task.due_time);
@@ -23,7 +24,7 @@ function TaskRow({ task }: { task: Task }) {
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
         {task.created_by_name} → {task.assigned_to_name} · {recurrenceLabel(task.recurrence_unit, task.recurrence_value)}
-        {task.due_date && ` · Due ${new Date(task.due_date).toLocaleDateString()}`}
+        {task.due_date && ` · Due ${formatDate(task.due_date)}`}
       </p>
     </Link>
   );

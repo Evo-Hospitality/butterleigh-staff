@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { EventSuggestion } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 function SuggestionList({ suggestions, empty }: { suggestions: EventSuggestion[]; empty: string }) {
   if (suggestions.length === 0) {
@@ -17,7 +18,7 @@ function SuggestionList({ suggestions, empty }: { suggestions: EventSuggestion[]
         >
           <p className="font-medium text-primary">{s.title}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Suggested by {s.submitted_by_name} · {new Date(s.created_at).toLocaleDateString()}
+            Suggested by {s.submitted_by_name} · {formatDate(s.created_at)}
           </p>
         </Link>
       ))}

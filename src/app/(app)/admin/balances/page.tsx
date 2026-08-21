@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { Profile, LeaveBalance } from "@/lib/types";
 import { effectiveAllowance, remainingBalance } from "@/lib/holiday/balance";
 import { saveBalances } from "./actions";
+import { formatDateOnly } from "@/lib/format";
 
 export default async function BalancesPage({
   searchParams,
@@ -134,7 +135,7 @@ export default async function BalancesPage({
                           />
                           {!bal && person.start_date && new Date(person.start_date).getFullYear() === year && (
                             <p className="mt-1 text-xs text-muted-foreground">
-                              pro-rated from {person.annual_allowance_days} (started {person.start_date})
+                              pro-rated from {person.annual_allowance_days} (started {formatDateOnly(person.start_date)})
                             </p>
                           )}
                         </>

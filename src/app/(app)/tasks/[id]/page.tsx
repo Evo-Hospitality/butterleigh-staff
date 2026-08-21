@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { recurrenceLabel, isOverdue } from "@/lib/tasks/format";
 import type { Task, TaskReview } from "@/lib/types";
 import { completeTaskAction, reviewTaskAction } from "./actions";
+import { formatDate, formatDateTime } from "@/lib/format";
 
 function StatusBadge({ status }: { status: string }) {
   const style =
@@ -70,7 +71,7 @@ export default async function TaskDetailPage({
         {task.due_date && (
           <>
             {" "}
-            · Due {new Date(task.due_date).toLocaleDateString()}
+            · Due {formatDate(task.due_date)}
             {task.due_time && ` at ${task.due_time.slice(0, 5)}`}
             {overdue && <span className="text-red-700"> (overdue)</span>}
           </>
@@ -142,7 +143,7 @@ export default async function TaskDetailPage({
                 <p className="mb-1 text-xs text-muted-foreground">
                   {r.completed_by_name} completed it · {r.reviewed_by_name}{" "}
                   {r.outcome === "done" ? "confirmed done" : "sent it back"} ·{" "}
-                  {new Date(r.reviewed_at).toLocaleString()}
+                  {formatDateTime(r.reviewed_at)}
                 </p>
                 {r.note && <p>{r.note}</p>}
               </div>

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { isManagerOrAdmin, type EventSuggestion, type EventSuggestionPhoto } from "@/lib/types";
 import { decideAction, deleteSuggestionAction } from "./actions";
 import { DeleteSuggestionButton } from "./delete-button";
+import { formatDate } from "@/lib/format";
 
 function StatusBadge({ status }: { status: string }) {
   const style =
@@ -56,7 +57,7 @@ export default async function EventSuggestionDetailPage({
         <StatusBadge status={suggestion.status} />
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        Suggested by {suggestion.submitted_by_name} · {new Date(suggestion.created_at).toLocaleDateString()}
+        Suggested by {suggestion.submitted_by_name} · {formatDate(suggestion.created_at)}
       </p>
 
       {error && (
@@ -83,7 +84,7 @@ export default async function EventSuggestionDetailPage({
         <div className="mb-6 max-w-lg rounded-md border border-border bg-muted p-4 text-sm">
           <p className="font-medium">
             {suggestion.status === "approved" ? "Approved" : "Declined"} by {suggestion.decided_by_name}
-            {suggestion.decided_at && ` · ${new Date(suggestion.decided_at).toLocaleDateString()}`}
+            {suggestion.decided_at && ` · ${formatDate(suggestion.decided_at)}`}
           </p>
           {suggestion.decision_note && <p className="mt-1 text-muted-foreground">{suggestion.decision_note}</p>}
         </div>

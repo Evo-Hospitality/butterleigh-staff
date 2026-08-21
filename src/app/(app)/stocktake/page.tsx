@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import type { StockTake, StockTakeEntry } from "@/lib/types";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteStockTakeDraftAction, deleteSubmittedStockTakeAction } from "./actions";
+import { formatDateOnly, formatDateTime } from "@/lib/format";
 
 export default async function StockTakePage() {
   const { supabase, profile } = await requireUser();
@@ -64,9 +65,9 @@ export default async function StockTakePage() {
                 {drafts.map((s) => (
                   <tr key={s.id} className="border-t border-border">
                     <td className="px-4 py-2 capitalize">{s.type}</td>
-                    <td className="px-4 py-2">{s.stock_date}</td>
+                    <td className="px-4 py-2">{formatDateOnly(s.stock_date)}</td>
                     <td className="px-4 py-2">{s.submitted_by_name}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{new Date(s.updated_at).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{formatDateTime(s.updated_at)}</td>
                     <td className="px-4 py-2 text-right">
                       <Link href={`/stocktake/${s.id}/edit`} className="mr-4 text-accent hover:underline">
                         Resume
@@ -74,7 +75,7 @@ export default async function StockTakePage() {
                       <ConfirmDeleteButton
                         action={deleteStockTakeDraftAction.bind(null, s.id)}
                         label="Discard"
-                        confirmMessage={`Discard this ${s.type} draft from ${s.stock_date}? Everything counted so far will be lost.`}
+                        confirmMessage={`Discard this ${s.type} draft from ${formatDateOnly(s.stock_date)}? Everything counted so far will be lost.`}
                       />
                     </td>
                   </tr>
@@ -106,10 +107,10 @@ export default async function StockTakePage() {
                     {s.type}
                   </Link>
                 </td>
-                <td className="px-4 py-2">{s.stock_date}</td>
+                <td className="px-4 py-2">{formatDateOnly(s.stock_date)}</td>
                 <td className="px-4 py-2">{s.submitted_by_name}</td>
                 <td className="px-4 py-2 text-muted-foreground">
-                  {s.submitted_at ? new Date(s.submitted_at).toLocaleString() : "—"}
+                  {s.submitted_at ? formatDateTime(s.submitted_at) : "—"}
                 </td>
                 <td className="px-4 py-2">£{(valueByStockTake.get(s.id) ?? 0).toFixed(2)}</td>
                 <td className="px-4 py-2 text-right">
@@ -117,7 +118,7 @@ export default async function StockTakePage() {
                     <ConfirmDeleteButton
                       action={deleteSubmittedStockTakeAction.bind(null, s.id)}
                       label="Delete"
-                      confirmMessage={`Permanently delete the ${s.type} stocktake from ${s.stock_date}? This cannot be undone.`}
+                      confirmMessage={`Permanently delete the ${s.type} stocktake from ${formatDateOnly(s.stock_date)}? This cannot be undone.`}
                     />
                   )}
                 </td>

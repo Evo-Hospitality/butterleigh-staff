@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
 import { proratedAllowance } from "@/lib/holiday/proration";
+import { formatDate } from "@/lib/format";
 import {
   updateStaffAction,
   deleteStaffAction,
@@ -54,7 +55,7 @@ export function EditStaffForm({
       <div className="flex items-center justify-between">
         <div className="text-sm">
           {staff.invited_at ? (
-            <>Invited {new Date(staff.invited_at).toLocaleDateString()}</>
+            <>Invited {formatDate(staff.invited_at)}</>
           ) : (
             <span className="text-muted-foreground">Not invited yet — they can&apos;t log in</span>
           )}

@@ -40,6 +40,11 @@ export function Nav({ profile }: { profile: Profile }) {
               Actions
             </Link>
           )}
+          {canApprove && (
+            <Link href="/checkins" className="hover:text-accent">
+              Check Ins
+            </Link>
+          )}
           <Link href="/stocktake" className="hover:text-accent">
             Stocktake
           </Link>

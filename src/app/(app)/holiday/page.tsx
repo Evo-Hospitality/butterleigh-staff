@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import type { LeaveBalance, LeaveRequest, LieuRequest } from "@/lib/types";
 import { remainingBalance as remainingBalanceFor } from "@/lib/holiday/balance";
 import { cancelLeaveRequest, cancelLieuRequest } from "./actions";
+import { formatDateOnly } from "@/lib/format";
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -118,7 +119,7 @@ export default async function HolidayPage() {
               <tr key={`${r.kind}-${r.id}`} className="border-t border-border">
                 <td className="px-4 py-2 capitalize">{r.kind === "holiday" ? "Holiday" : "Day in lieu"}</td>
                 <td className="px-4 py-2">
-                  {r.kind === "holiday" ? `${r.start_date} to ${r.end_date}` : r.work_date}
+                  {r.kind === "holiday" ? `${formatDateOnly(r.start_date)} to ${formatDateOnly(r.end_date)}` : formatDateOnly(r.work_date)}
                 </td>
                 <td className="px-4 py-2">
                   {r.kind === "holiday" ? `${r.amount} ${unit}` : "+1 day"}
