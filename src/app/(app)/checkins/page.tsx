@@ -93,11 +93,10 @@ export default async function CheckinsPage({
       <div className="mb-8 flex flex-col gap-3">
         {sections.map((s) => (
           <div key={s.key} className="rounded-lg border border-border p-4">
-            <CollapsibleSection
-              title={s.title}
-              count={summary[s.key].length}
-              defaultOpen={summary[s.key].length > 0}
-            >
+            {/* Shut by default — the counts in the headers are the at-a-glance
+                view, and you open only the section you're actually working
+                through. */}
+            <CollapsibleSection title={s.title} count={summary[s.key].length}>
               <SummaryList items={summary[s.key]} empty={s.empty} />
               {s.key === "photos" && (
                 <div className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">
