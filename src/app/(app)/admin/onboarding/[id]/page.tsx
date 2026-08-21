@@ -176,11 +176,18 @@ export default async function AdminEmployeeDetailsPage({
                     {formatDateTime(d.created_at)}
                     {d.uploaded_by_name ? ` · ${d.uploaded_by_name}` : ""}
                   </span>
-                  <span className={d.visible_to_staff ? "text-green-700" : "text-primary"}>
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-semibold ${
+                      d.visible_to_staff ? "bg-green-50 text-green-800" : "bg-yellow-50 text-yellow-900"
+                    }`}
+                  >
                     {d.visible_to_staff ? "They can see this" : "Internal — they can't see it"}
                   </span>
                   <form action={setDocumentVisibilityAction.bind(null, d.id, person.id, !d.visible_to_staff)}>
-                    <button type="submit" className="font-semibold text-accent hover:underline">
+                    <button
+                      type="submit"
+                      className="rounded-md border border-border bg-white px-2 py-0.5 font-semibold text-primary hover:border-accent hover:text-accent"
+                    >
                       {d.visible_to_staff ? "Make internal" : "Share with them"}
                     </button>
                   </form>
@@ -190,27 +197,67 @@ export default async function AdminEmployeeDetailsPage({
           </ul>
         )}
 
-        <form action={uploadEmployeeDocumentsAction} className="flex max-w-xl flex-col gap-3">
+        {/* Numbered, and the file comes first: setting a type and a
+            visibility before you've chosen anything reads as unrelated to
+            the document you're about to add, which is exactly how it got
+            missed. */}
+        <form
+          action={uploadEmployeeDocumentsAction}
+          className="flex max-w-xl flex-col gap-5 rounded-lg border border-border bg-muted p-5"
+        >
+          <h3 className="font-bold text-primary">Add a document</h3>
           <input type="hidden" name="staff_id" value={person.id} />
-          <DocumentTypeSelect types={typeNames} />
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" name="visible_to_staff" value="1" className="mt-1" />
-            <span>
-              Let {person.full_name} see this on their own My details page
-              <span className="block text-xs text-muted-foreground">
-                Leave unticked for anything internal. Their contract, yes; a note to file about
-                them, no. You can change your mind later.
+
+          <div>
+            <p className="mb-2 text-sm font-medium">1. Choose the file or files</p>
+            {/* Filed outside their own storage folder, so an internal
+                document can't be read straight out of storage. */}
+            <EmployeeDocumentPicker
+              staffId={person.id}
+              pathPrefix={adminDocumentPrefix(person.id)}
+              label="+ Choose a file"
+            />
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm font-medium">2. What is it?</p>
+            <DocumentTypeSelect types={typeNames} label={null} />
+          </div>
+
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium">
+              3. Can {person.full_name} see it?
+            </legend>
+            {/* Two explicit choices rather than a tick box: whether someone
+                reads their own warning letter is too consequential to hinge
+                on an unticked box nobody noticed. */}
+            <label className="mb-2 flex items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="visible_to_staff"
+                value="0"
+                defaultChecked
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium">No — internal only</span>
+                <span className="block text-xs text-muted-foreground">
+                  Admins only. A warning letter, a note to file, anything they shouldn&apos;t read.
+                </span>
               </span>
-            </span>
-          </label>
-          {/* Filed outside their own storage folder, so an internal document
-              can't be read straight out of storage. */}
-          <EmployeeDocumentPicker
-            staffId={person.id}
-            pathPrefix={adminDocumentPrefix(person.id)}
-            label="+ Add a file"
-          />
-          <SubmitButton pendingLabel="Saving…">Save files</SubmitButton>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" name="visible_to_staff" value="1" className="mt-1" />
+              <span>
+                <span className="font-medium">Yes — show it on their My details page</span>
+                <span className="block text-xs text-muted-foreground">
+                  Their contract, offer letter, training certificate. You can change this later.
+                </span>
+              </span>
+            </label>
+          </fieldset>
+
+          <SubmitButton pendingLabel="Saving…">Save to their file</SubmitButton>
         </form>
       </section>
 

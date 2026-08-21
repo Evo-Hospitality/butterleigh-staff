@@ -11,13 +11,20 @@ const ADD_SENTINEL = "__add_new_type__";
 //
 // A brand-new name rides along in its own field and the server adds it to
 // the list, rather than needing a round-trip first.
-export function DocumentTypeSelect({ types }: { types: string[] }) {
+export function DocumentTypeSelect({
+  types,
+  label = "Document type",
+}: {
+  types: string[];
+  // null when the surrounding form already labels this step.
+  label?: string | null;
+}) {
   const [value, setValue] = useState(types[0] ?? "");
   const [addingNew, setAddingNew] = useState(false);
 
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium">Document type</label>
+      {label && <label className="mb-1 block text-sm font-medium">{label}</label>}
       {addingNew ? (
         <div className="flex flex-wrap items-center gap-2">
           <input
