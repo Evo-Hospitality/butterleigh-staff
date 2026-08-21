@@ -26,7 +26,7 @@ export default async function CheckinGroupsPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold text-primary">Check-in agenda groups</h1>
+      <h1 className="mb-2 text-2xl font-bold text-primary">Agenda groups</h1>
       <p className="mb-6 max-w-xl text-sm text-muted-foreground">
         The headings the weekly management meeting is structured around. Managers add discussion
         items under them; only admins change the headings themselves. Archive a group to retire it
@@ -78,7 +78,7 @@ export default async function CheckinGroupsPage() {
                       </button>
                     </form>
                     {!g.active && (
-                      <span className="text-xs text-muted-foreground">Archived — hidden from Check Ins</span>
+                      <span className="text-xs text-muted-foreground">Archived — hidden from Overview</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">{count}</td>

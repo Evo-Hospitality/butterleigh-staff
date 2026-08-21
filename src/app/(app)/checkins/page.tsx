@@ -79,7 +79,7 @@ export default async function CheckinsPage({
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-primary">Check Ins</h1>
+        <h1 className="text-2xl font-bold text-primary">Overview</h1>
         <span className="text-sm text-muted-foreground">
           {totalOutstanding} {totalOutstanding === 1 ? "thing" : "things"} in flight
         </span>

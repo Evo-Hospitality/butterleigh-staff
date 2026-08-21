@@ -15,6 +15,13 @@ export function Nav({ profile }: { profile: Profile }) {
           Butterleigh Inn
         </Link>
         <nav className="flex flex-wrap items-center gap-3 text-sm sm:gap-6 sm:text-[1.75rem]">
+          {/* First for managers and admins — it's the way in to everything
+              else. Hidden for everyone else, so their menu starts at Tasks. */}
+          {canApprove && (
+            <Link href="/checkins" className="hover:text-accent">
+              Overview
+            </Link>
+          )}
           <Link href="/tasks" className="hover:text-accent">
             Tasks
           </Link>
@@ -38,11 +45,6 @@ export function Nav({ profile }: { profile: Profile }) {
           {canApprove && (
             <Link href="/actions" className="hover:text-accent">
               Actions
-            </Link>
-          )}
-          {canApprove && (
-            <Link href="/checkins" className="hover:text-accent">
-              Check Ins
             </Link>
           )}
           <Link href="/stocktake" className="hover:text-accent">

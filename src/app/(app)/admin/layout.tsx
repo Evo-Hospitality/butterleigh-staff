@@ -11,7 +11,7 @@ const TABS = [
   { href: "/admin/activity-log", label: "Activity log" },
   { href: "/admin/maintenance-settings", label: "Maintenance settings" },
   { href: "/admin/social-photos-settings", label: "Social photos" },
-  { href: "/admin/checkin-groups", label: "Check-in groups" },
+  { href: "/admin/checkin-groups", label: "Agenda groups" },
   { href: "/admin/stock-locations", label: "Stock locations" },
 ];
 

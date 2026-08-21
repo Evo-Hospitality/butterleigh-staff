@@ -12,8 +12,18 @@ import {
 } from "lucide-react";
 import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
 
-// Add an entry here for each future mini-app.
+// Add an entry here for each future mini-app. Order matters — the first
+// tile a manager or admin sees is Overview, since it's the way in to
+// everything else. It's filtered out for other staff, whose grid starts
+// at Tasks.
 const TILES = [
+  {
+    href: "/checkins",
+    label: "Overview",
+    description: "What's in flight across the apps, and the meeting agenda",
+    icon: ClipboardCheck,
+    show: isManagerOrAdmin,
+  },
   {
     href: "/tasks",
     label: "Tasks",
@@ -61,13 +71,6 @@ const TILES = [
     label: "Actions",
     description: "Raise and track things assigned between managers/admins",
     icon: ClipboardList,
-    show: isManagerOrAdmin,
-  },
-  {
-    href: "/checkins",
-    label: "Check Ins",
-    description: "Weekly management meeting: what's in flight, and the agenda",
-    icon: ClipboardCheck,
     show: isManagerOrAdmin,
   },
   {
