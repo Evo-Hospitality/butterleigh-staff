@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { findDuplicateId, readSubmissionToken } from "@/lib/submission-token";
 
 function fail(message: string): never {
   redirect(`/sops/ask?error=${encodeURIComponent(message)}`);
@@ -11,6 +12,7 @@ export async function askQuestionAction(formData: FormData) {
   const { supabase, user, profile } = await requireUser();
 
   const title = String(formData.get("title") ?? "").trim();
+  const submissionToken = readSubmissionToken(formData);
   if (!title) {
     fail("Enter your question.");
   }
@@ -22,9 +24,15 @@ export async function askQuestionAction(formData: FormData) {
       asked_by: user.id,
       asked_by_name: profile.full_name,
       status: "unanswered",
+      submission_token: submissionToken,
     })
     .select()
     .single();
+
+  const duplicateId = await findDuplicateId(supabase, "sop_entries", error, submissionToken);
+  if (duplicateId) {
+    redirect(`/sops/${duplicateId}`);
+  }
 
   if (error || !entry) {
     fail(error?.message ?? "Failed to submit your question.");

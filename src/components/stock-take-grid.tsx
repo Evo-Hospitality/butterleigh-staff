@@ -48,6 +48,7 @@ export function StockTakeGrid({
     status: StockTakeStatus;
     stockDate: string;
     notes: string;
+    submissionToken?: string | null;
     entries: {
       stockItemId: string | null;
       groupName: string;
@@ -65,6 +66,10 @@ export function StockTakeGrid({
   const [newGroup, setNewGroup] = useState("");
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState<StockTakeStatus | null>(null);
+  // Guards against a new stocktake being created twice. Irrelevant once
+  // stockTakeId is set (resuming a draft targets that id), but stable for
+  // the life of the mount either way.
+  const [submissionToken] = useState(() => crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
   const [units, setUnits] = useState<string[]>(initialUnits);
   // Which row (if any) is currently showing the inline "new unit" input,
@@ -166,6 +171,7 @@ export function StockTakeGrid({
       status,
       stockDate,
       notes,
+      submissionToken,
       entries: rows.map((r) => ({
         stockItemId: r.stockItemId,
         groupName: r.groupName,

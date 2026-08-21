@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/auth";
+import { SubmitButton } from "@/components/submit-button";
 import { askQuestionAction } from "./actions";
 
 export default async function AskSopQuestionPage({
@@ -17,6 +18,7 @@ export default async function AskSopQuestionPage({
       )}
 
       <form action={askQuestionAction} className="flex max-w-md flex-col gap-4">
+        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
         <div>
           <label className="mb-1 block text-sm font-medium">Your question</label>
           <textarea
@@ -27,12 +29,7 @@ export default async function AskSopQuestionPage({
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           />
         </div>
-        <button
-          type="submit"
-          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-        >
-          Submit
-        </button>
+        <SubmitButton pendingLabel="Submitting…">Submit</SubmitButton>
       </form>
     </div>
   );

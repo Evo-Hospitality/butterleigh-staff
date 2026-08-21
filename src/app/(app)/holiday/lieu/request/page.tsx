@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { SubmitButton } from "@/components/submit-button";
 import { requestLieuDay } from "./actions";
 
 export default async function RequestLieuDayPage({
@@ -27,6 +28,7 @@ export default async function RequestLieuDayPage({
       )}
 
       <form action={requestLieuDay} className="flex max-w-md flex-col gap-4">
+        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
         <div>
           <label className="mb-1 block text-sm font-medium">Date you worked / will work</label>
           <input
@@ -44,12 +46,7 @@ export default async function RequestLieuDayPage({
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           />
         </div>
-        <button
-          type="submit"
-          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-        >
-          Submit request
-        </button>
+        <SubmitButton pendingLabel="Submitting…">Submit request</SubmitButton>
       </form>
     </div>
   );

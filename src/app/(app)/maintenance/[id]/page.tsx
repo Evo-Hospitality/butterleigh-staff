@@ -43,6 +43,11 @@ export default async function MaintenanceDetailPage({
   }
 
   const canManage = request.assigned_to === user.id || profile.role === "admin";
+  // Wider than canManage: whoever reported it can fix their own wording.
+  // Matches edit_maintenance_request()'s check.
+  const canEdit =
+    request.status === "open" &&
+    (request.submitted_by === user.id || request.assigned_to === user.id || profile.role === "admin");
 
   let assignees: Profile[] = [];
   if (canManage) {
@@ -78,6 +83,14 @@ export default async function MaintenanceDetailPage({
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Reported by {request.submitted_by_name} · Assigned to {request.assigned_to_name}
+        {canEdit && (
+          <>
+            {" · "}
+            <Link href={`/maintenance/${id}/edit`} className="text-accent hover:underline">
+              Edit
+            </Link>
+          </>
+        )}
       </p>
 
       {error && (

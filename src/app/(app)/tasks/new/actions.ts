@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { notifyTaskAssigned } from "@/lib/tasks/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { findDuplicateId, readSubmissionToken } from "@/lib/submission-token";
 
 function fail(message: string): never {
   redirect(`/tasks/new?error=${encodeURIComponent(message)}`);
@@ -19,6 +20,7 @@ export async function createTaskAction(formData: FormData) {
   const dueTime = formData.get("due_time");
   const recurrenceUnit = String(formData.get("recurrence_unit") ?? "").trim();
   const recurrenceValue = String(formData.get("recurrence_value") ?? "").trim();
+  const submissionToken = readSubmissionToken(formData);
 
   if (!title) {
     fail("Give the task a title.");
@@ -46,9 +48,16 @@ export async function createTaskAction(formData: FormData) {
       due_time: dueTime ? String(dueTime) : null,
       recurrence_unit: recurrenceUnit || null,
       recurrence_value: recurrenceValue ? Number(recurrenceValue) : null,
+      submission_token: submissionToken,
     })
     .select()
     .single();
+
+  // Second press: the first already created it and emailed the assignee.
+  const duplicateId = await findDuplicateId(supabase, "tasks", error, submissionToken);
+  if (duplicateId) {
+    redirect(`/tasks/${duplicateId}`);
+  }
 
   if (error || !task) {
     fail(error?.message ?? "Failed to create this task.");

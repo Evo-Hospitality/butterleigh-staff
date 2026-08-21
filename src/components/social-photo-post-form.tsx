@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { SocialPhotoPicker } from "./social-photo-picker";
+import { SubmissionToken } from "./submission-token";
+import { SubmitButton } from "./submit-button";
 
 type Photo = { localId: string; status: "uploading" | "done" | "error"; url: string | null; error?: string };
 
@@ -16,6 +18,7 @@ export function SocialPhotoPostForm({ action }: { action: (formData: FormData) =
 
   return (
     <form action={action} className="flex max-w-md flex-col gap-4">
+      <SubmissionToken />
       <div>
         <label className="mb-1 block text-sm font-medium">Caption (optional)</label>
         <textarea
@@ -31,13 +34,9 @@ export function SocialPhotoPostForm({ action }: { action: (formData: FormData) =
         <SocialPhotoPicker onPhotosChange={setPhotos} />
       </div>
 
-      <button
-        type="submit"
-        disabled={uploading || !hasPhoto}
-        className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      <SubmitButton disabled={uploading || !hasPhoto} pendingLabel="Submitting…">
         Submit
-      </button>
+      </SubmitButton>
     </form>
   );
 }

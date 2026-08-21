@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireSopManage } from "@/lib/auth";
 import { countBlocks, insertBlocks } from "@/lib/sops/blocks";
+import { findDuplicateId, readSubmissionToken } from "@/lib/submission-token";
 
 function fail(message: string): never {
   redirect(`/sops/new?error=${encodeURIComponent(message)}`);
@@ -26,6 +27,7 @@ export async function publishAction(formData: FormData) {
     fail("Add at least one block before publishing.");
   }
 
+  const submissionToken = readSubmissionToken(formData);
   const { data: entry, error } = await supabase
     .from("sop_entries")
     .insert({
@@ -36,9 +38,16 @@ export async function publishAction(formData: FormData) {
       answered_by: profile.id,
       answered_by_name: profile.full_name,
       answered_at: new Date().toISOString(),
+      submission_token: submissionToken,
     })
     .select()
     .single();
+
+  // Second press: the first already created the entry and its blocks.
+  const duplicateId = await findDuplicateId(supabase, "sop_entries", error, submissionToken);
+  if (duplicateId) {
+    redirect(`/sops/${duplicateId}`);
+  }
 
   if (error || !entry) {
     fail(error?.message ?? "Failed to create this entry.");

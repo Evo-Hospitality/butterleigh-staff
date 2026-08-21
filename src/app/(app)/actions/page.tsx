@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireActionItemsAccess } from "@/lib/auth";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import type { ActionItem, ActionItemUpdateEntry } from "@/lib/types";
 
 function ActionTable({
@@ -121,8 +122,9 @@ export default async function ActionsPage() {
         <ActionTable items={open} empty="Nothing open right now." latestUpdates={latestUpdates} />
       </div>
 
-      <h2 className="mb-3 text-lg font-bold text-primary">Closed</h2>
-      <ActionTable items={closed} empty="No closed Actions yet." showClosedDate />
+      <CollapsibleSection title="Closed" count={closed.length}>
+        <ActionTable items={closed} empty="No closed Actions yet." showClosedDate />
+      </CollapsibleSection>
     </div>
   );
 }

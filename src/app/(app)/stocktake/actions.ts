@@ -19,6 +19,7 @@ export async function saveStockTakeAction(payload: {
   status: StockTakeStatus;
   stockDate: string;
   notes: string;
+  submissionToken?: string | null;
   entries: {
     stockItemId: string | null;
     groupName: string;
@@ -43,6 +44,9 @@ export async function saveStockTakeAction(payload: {
     p_status: payload.status,
     p_stock_date: payload.stockDate,
     p_notes: payload.notes.trim() || null,
+    // Only consulted when creating a new stocktake — resuming a draft
+    // already targets a specific id, so it can't duplicate.
+    p_submission_token: payload.submissionToken ?? null,
     p_entries: payload.entries.map((e) => ({
       stock_item_id: e.stockItemId,
       group_name: e.groupName,

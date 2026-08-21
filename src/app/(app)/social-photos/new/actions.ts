@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { insertPhotos } from "@/lib/social-photos/photos";
 import { notifyPostSubmitted } from "@/lib/social-photos/notifications";
+import { findDuplicateId, readSubmissionToken } from "@/lib/submission-token";
 
 function fail(message: string): never {
   redirect(`/social-photos/new?error=${encodeURIComponent(message)}`);
@@ -14,6 +15,7 @@ export async function createPostAction(formData: FormData) {
 
   const caption = formData.get("caption");
   const photosJson = String(formData.get("photos_json") ?? "[]");
+  const submissionToken = readSubmissionToken(formData);
 
   const { data: post, error } = await supabase
     .from("social_photo_posts")
@@ -21,9 +23,17 @@ export async function createPostAction(formData: FormData) {
       submitted_by: user.id,
       submitted_by_name: profile.full_name,
       caption: caption ? String(caption).trim() || null : null,
+      submission_token: submissionToken,
     })
     .select()
     .single();
+
+  // Second press: the first already created the post, attached its photos
+  // and emailed the reviewer — don't do any of it twice.
+  const duplicateId = await findDuplicateId(supabase, "social_photo_posts", error, submissionToken);
+  if (duplicateId) {
+    redirect("/social-photos");
+  }
 
   if (error || !post) {
     fail(error?.message ?? "Failed to submit your photos.");

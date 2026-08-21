@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireMaintenanceAccess } from "@/lib/auth";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import type { MaintenanceRequest, MaintenanceUpdateEntry } from "@/lib/types";
 
 function RequestTable({
@@ -107,8 +108,9 @@ export default async function MaintenancePage() {
         <RequestTable requests={open} empty="Nothing open right now." latestUpdates={latestUpdates} />
       </div>
 
-      <h2 className="mb-3 text-lg font-bold text-primary">Closed requests</h2>
-      <RequestTable requests={closed} empty="No closed requests yet." showClosedDate />
+      <CollapsibleSection title="Closed requests" count={closed.length}>
+        <RequestTable requests={closed} empty="No closed requests yet." showClosedDate />
+      </CollapsibleSection>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { SubmissionToken } from "./submission-token";
+import { SubmitButton } from "./submit-button";
 
 const MAX_SIZE = 15 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
@@ -118,6 +120,7 @@ export function SopBlockEditor({
 
   return (
     <form action={publishAction} className="flex max-w-2xl flex-col gap-5">
+      <SubmissionToken />
       <div>
         <label className="mb-1 block text-sm font-medium">{titleLabel}</label>
         <input
@@ -234,21 +237,17 @@ export function SopBlockEditor({
       </div>
 
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={!canPublish}
-          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <SubmitButton disabled={!canPublish} pendingLabel="Saving…">
           {publishLabel}
-        </button>
-        <button
-          type="submit"
+        </SubmitButton>
+        <SubmitButton
           formAction={draftAction}
           disabled={!canSaveDraft}
+          pendingLabel="Saving…"
           className="self-start rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {draftLabel}
-        </button>
+        </SubmitButton>
       </div>
     </form>
   );

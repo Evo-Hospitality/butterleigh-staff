@@ -43,6 +43,11 @@ export default async function ActionDetailPage({
   }
 
   const canManage = action.assigned_to === user.id || profile.role === "admin";
+  // Wider than canManage: the raiser can fix their own wording even though
+  // they don't own the Action. Matches edit_action_item()'s check.
+  const canEdit =
+    action.status === "open" &&
+    (action.submitted_by === user.id || action.assigned_to === user.id || profile.role === "admin");
 
   let assignees: Profile[] = [];
   if (canManage) {
@@ -78,6 +83,14 @@ export default async function ActionDetailPage({
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Raised by {action.submitted_by_name} · Assigned to {action.assigned_to_name}
+        {canEdit && (
+          <>
+            {" · "}
+            <Link href={`/actions/${id}/edit`} className="text-accent hover:underline">
+              Edit
+            </Link>
+          </>
+        )}
       </p>
 
       {error && (

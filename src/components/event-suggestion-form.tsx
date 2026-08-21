@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { EventPhotoPicker } from "./event-photo-picker";
+import { SubmissionToken } from "./submission-token";
+import { SubmitButton } from "./submit-button";
 
 export function EventSuggestionForm({ action }: { action: (formData: FormData) => Promise<void> }) {
   const [uploading, setUploading] = useState(false);
 
   return (
     <form action={action} className="flex max-w-md flex-col gap-4">
+      <SubmissionToken />
       <div>
         <label className="mb-1 block text-sm font-medium">Idea</label>
         <input
@@ -33,13 +36,9 @@ export function EventSuggestionForm({ action }: { action: (formData: FormData) =
         <EventPhotoPicker onPendingChange={setUploading} />
       </div>
 
-      <button
-        type="submit"
-        disabled={uploading}
-        className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      <SubmitButton disabled={uploading} pendingLabel="Submitting…">
         Submit idea
-      </button>
+      </SubmitButton>
     </form>
   );
 }

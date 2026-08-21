@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { Profile } from "@/lib/types";
 import { countWorkingDays } from "@/lib/holiday/working-days";
+import { SubmissionToken } from "@/components/submission-token";
 import { requestLeave } from "./actions";
 
 // Must be a child of the <form>, not the component rendering it — that's
@@ -37,6 +38,7 @@ export function RequestForm({ profile }: { profile: Profile }) {
 
   return (
     <form action={requestLeave} className="flex max-w-md flex-col gap-4">
+      <SubmissionToken />
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Start date</label>

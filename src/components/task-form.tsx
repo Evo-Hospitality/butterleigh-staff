@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { Profile, RecurrenceUnit, Task } from "@/lib/types";
+import { SubmissionToken } from "./submission-token";
+import { SubmitButton } from "./submit-button";
 
 type Mode = "One-off" | "Daily" | "Weekly" | "Monthly" | "Custom";
 
@@ -48,6 +50,9 @@ export function TaskForm({
 
   return (
     <form action={action} className="flex max-w-lg flex-col gap-4">
+      {/* Only meaningful when creating; harmless on the edit form, which
+          targets a specific task id and can't duplicate anything. */}
+      <SubmissionToken />
       <div>
         <label className="mb-1 block text-sm font-medium">Task</label>
         <input
@@ -156,12 +161,7 @@ export function TaskForm({
         </label>
       )}
 
-      <button
-        type="submit"
-        className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-      >
-        {submitLabel}
-      </button>
+      <SubmitButton>{submitLabel}</SubmitButton>
     </form>
   );
 }

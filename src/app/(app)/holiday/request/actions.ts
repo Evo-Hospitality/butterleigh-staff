@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { countWorkingDays } from "@/lib/holiday/working-days";
 import { notifyNewLeaveRequest } from "@/lib/holiday/notifications";
+import { readSubmissionToken } from "@/lib/submission-token";
 
 export async function requestLeave(formData: FormData) {
   const { supabase, profile } = await requireUser();
@@ -42,6 +43,9 @@ export async function requestLeave(formData: FormData) {
     p_amount: amount,
     p_is_unpaid: isUnpaid,
     p_notes: notes ? String(notes) : null,
+    // The RPC returns the existing request's id if this token was already
+    // used, so a double press books one day off, not two.
+    p_submission_token: readSubmissionToken(formData),
   });
 
   if (error) {
