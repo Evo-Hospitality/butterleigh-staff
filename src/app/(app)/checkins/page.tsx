@@ -41,12 +41,13 @@ export default async function CheckinsPage({
 }: {
   searchParams: Promise<{ photoDays?: string }>;
 }) {
-  const { supabase } = await requireCheckinsAccess();
+  const { supabase, profile } = await requireCheckinsAccess();
+  const isAdmin = profile.role === "admin";
   const params = await searchParams;
   const photoDays = Math.max(1, Number(params.photoDays) || 7);
 
   const [summary, { data: groups }, { data: items }] = await Promise.all([
-    buildCheckinSummary(supabase, createAdminClient(), photoDays),
+    buildCheckinSummary(supabase, createAdminClient(), photoDays, isAdmin),
     supabase
       .from("checkin_groups")
       .select("*")
@@ -61,6 +62,15 @@ export default async function CheckinsPage({
   const boardGroups: BoardGroup[] = partitionAgenda(groups ?? [], items ?? []);
 
   const sections: { key: keyof typeof summary; title: string; empty: string }[] = [
+    // Admin-only, and first: both block someone — a new starter can't work
+    // until they're approved, and an unapproved bank change means someone
+    // isn't getting paid where they expect. Managers don't see these at all.
+    ...(isAdmin
+      ? [
+          { key: "onboarding" as const, title: "New starters waiting for review", empty: "Nothing waiting." },
+          { key: "bankChanges" as const, title: "Bank changes to approve", empty: "Nothing waiting." },
+        ]
+      : []),
     { key: "actions", title: "Open actions", empty: "Nothing open." },
     { key: "maintenance", title: "Open maintenance", empty: "Nothing open." },
     { key: "tasks", title: "Open tasks (management team)", empty: "Nothing outstanding." },
