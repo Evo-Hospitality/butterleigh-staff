@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div>
-      <nav className="mb-6 flex gap-1 border-b border-border text-sm">
+      <nav className="mb-6 flex flex-wrap gap-1 border-b border-border text-sm">
         {TABS.map((tab) => (
           <Link
             key={tab.href}
