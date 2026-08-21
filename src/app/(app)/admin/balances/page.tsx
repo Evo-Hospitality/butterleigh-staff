@@ -22,11 +22,24 @@ export default async function BalancesPage({
   return (
     <div>
       <h1 className="mb-2 text-2xl font-bold text-primary">Balances — {year}</h1>
-      <p className="mb-6 max-w-xl text-sm text-muted-foreground">
-        Enter each person&apos;s brought-forward balance for the year. Salaried allowance defaults
-        from their staff record the first time you save; accrued hours (hourly) fill in automatically
-        from monthly hours entries.
-      </p>
+      <div className="mb-6 max-w-2xl text-sm text-muted-foreground">
+        <p className="mb-2">
+          Each person&apos;s opening position for the leave year. Salaried allowance defaults from
+          their staff record the first time you save; accrued hours (hourly) fill in automatically
+          from monthly hours entries.
+        </p>
+        <p className="mb-2">
+          The 2026 opening balances came across from the Excel holiday tracker this replaced, and
+          are the closing balances as at the <strong>31 July 2026 payroll</strong>.
+        </p>
+        <p className="rounded-md bg-yellow-50 px-3 py-2 text-yellow-900">
+          <strong>Each leave year starts from scratch.</strong> Nothing is carried over
+          automatically on 1 January — a new year begins with an opening balance of zero, salaried
+          staff get the full allowance from their staff record, and hourly staff accrue from that
+          year&apos;s hours alone. Whatever should carry into {year + 1} has to be entered here
+          against {year + 1} deliberately.
+        </p>
+      </div>
 
       <div className="mb-4 flex gap-3 text-sm">
         {[year - 1, year, year + 1].map((y) => (
@@ -50,7 +63,10 @@ export default async function BalancesPage({
             <thead className="bg-muted text-left text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-medium">Staff</th>
-                <th className="px-4 py-2 font-medium">Brought forward</th>
+                {/* "Opening balance", not "brought forward" — nothing computes
+                    it from last year; it's the manual starting position for
+                    this leave year. (DB column stays brought_forward.) */}
+                <th className="px-4 py-2 font-medium">Opening balance</th>
                 <th className="px-4 py-2 font-medium">Allowance (salaried, days)</th>
                 <th className="px-4 py-2 font-medium">Lieu earned</th>
                 <th className="px-4 py-2 font-medium">Accrued hours</th>
