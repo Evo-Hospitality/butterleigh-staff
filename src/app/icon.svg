@@ -1,0 +1,21 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- The logo proper is three lines of serif text inside a thin ring, which
+       at 16px is a grey smudge. This keeps what still identifies it at that
+       size: the roundel shape and the brand's two colours, with the initial
+       carrying the rest.
+
+       Deliberately the accent orange rather than the navy: a navy disc is
+       just a dark blob among other dark favicons, and the letter has to be
+       set in the sans face — the serif's thin strokes and serifs close up
+       and turn the counters to mush at tab size. Checked at a real 16px. -->
+  <circle cx="32" cy="32" r="32" fill="#ff6900" />
+  <text
+    x="32"
+    y="48"
+    text-anchor="middle"
+    font-family="Figtree, Arial, Helvetica, sans-serif"
+    font-size="46"
+    font-weight="700"
+    fill="#303640"
+  >B</text>
+</svg>
