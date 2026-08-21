@@ -75,8 +75,11 @@ export default async function PayrollReportPage({
                 <td className="px-4 py-2 capitalize">{row.employmentType}</td>
                 <td className="px-4 py-2">{row.hoursWorkedThisMonth ?? "—"}</td>
                 <td className="px-4 py-2">{row.accruedThisMonth?.toFixed(2) ?? "—"}</td>
-                <td className="px-4 py-2">
-                  {row.holidayTakenThisMonth} {row.unit}
+                {/* Blank rather than "0 hours" — this is the column that
+                    actually needs actioning, so anything non-zero should
+                    jump out of a page of otherwise empty cells. */}
+                <td className="px-4 py-2 font-medium">
+                  {row.holidayTakenThisMonth > 0 ? `${row.holidayTakenThisMonth} ${row.unit}` : ""}
                 </td>
                 <td className="px-4 py-2">
                   {row.employmentType === "salaried" ? `${row.unpaidLeaveThisMonth} days` : "—"}

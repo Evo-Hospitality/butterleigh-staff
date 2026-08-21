@@ -21,6 +21,40 @@ function inMonth(dateStr: string, year: number, month: number) {
   return d.getFullYear() === year && d.getMonth() + 1 === month;
 }
 
+// Payroll cutoff: anything submitted from the 25th onwards has missed that
+// month's run and lands in the next one.
+const PAYROLL_CUTOFF_DAY = 25;
+
+// created_at is a UTC timestamp, but "the 25th" means the 25th in Devon.
+// Reading it with getDate() would use the server's zone — UTC on Vercel,
+// BST locally — so a request made late on the 24th UK time would land in a
+// different payroll month depending on where the report was generated.
+// Formatting in Europe/London makes it the same answer everywhere.
+function ukDateParts(iso: string): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .formatToParts(new Date(iso))
+    .reduce<Record<string, string>>((acc, p) => ({ ...acc, [p.type]: p.value }), {});
+
+  return { year: Number(parts.year), month: Number(parts.month), day: Number(parts.day) };
+}
+
+// Hourly staff are paid for holiday in the month they *asked* for it, not
+// the month the dates fall in — someone submitting in August for a shift in
+// September expects it in the August packet, and dating it forward
+// shouldn't silently push their money a month out.
+function payrollMonthForSubmission(createdAt: string): { year: number; month: number } {
+  const { year, month, day } = ukDateParts(createdAt);
+  if (day >= PAYROLL_CUTOFF_DAY) {
+    return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+  }
+  return { year, month };
+}
+
 export async function buildPayrollReport(
   supabase: SupabaseClient,
   year: number,
@@ -43,9 +77,16 @@ export async function buildPayrollReport(
     const balance = balanceByStaff.get(person.id);
     const hoursEntry = hoursByStaff.get(person.id);
 
-    const requestsThisMonth = (leave ?? []).filter(
-      (r) => r.staff_id === person.id && inMonth(r.start_date, year, month),
-    );
+    // Salaried leave still keys off the dates taken — their pay doesn't
+    // change, so the report is about which month the days belong to.
+    const requestsThisMonth = (leave ?? []).filter((r) => {
+      if (r.staff_id !== person.id) return false;
+      if (!isSalaried) {
+        const p = payrollMonthForSubmission(r.created_at);
+        return p.year === year && p.month === month;
+      }
+      return inMonth(r.start_date, year, month);
+    });
 
     const holidayTakenThisMonth = requestsThisMonth
       .filter((r) => !r.is_unpaid)
