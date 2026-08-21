@@ -5,25 +5,40 @@ import { requireAdmin } from "@/lib/auth";
 import { normaliseName, parseTimeEntries } from "@/lib/holiday/parse-time-entries";
 import type { Profile } from "@/lib/types";
 
-export type ImportResult =
-  | { ok: true; importId: string; posted: number; skippedSalaried: number; unmatched: number }
+// How a single name in the file will be treated if committed as-is.
+export type PreviewStatus = "post" | "salaried" | "unmatched";
+
+export type PreviewLine = {
+  rawName: string;
+  displayName: string;
+  hours: number;
+  shifts: number;
+  status: PreviewStatus;
+  staffId: string | null;
+  matchedName: string | null;
+};
+
+export type PreviewResult =
+  | {
+      ok: true;
+      filename: string;
+      periodStart: string | null;
+      periodEnd: string | null;
+      entryCount: number;
+      lines: PreviewLine[];
+    }
   | { ok: false; error: string };
 
-// Posts hours for the staff we can match, records the ones we can't, and
-// never lets the second stop the first — a couple of unrecognised names
-// shouldn't hold up a payroll run.
-export async function importTimeEntriesAction(formData: FormData): Promise<ImportResult> {
-  const { supabase, user, profile } = await requireAdmin();
+// Reads the file and works out what would happen — writes nothing. The
+// decision about which rows are real employees is made here, by a person,
+// every time: the file always contains clock-ins that aren't staff and which
+// ones vary, so this can't be a standing rule.
+export async function previewTimeEntriesAction(formData: FormData): Promise<PreviewResult> {
+  const { supabase } = await requireAdmin();
 
-  const year = Number(formData.get("year"));
-  const month = Number(formData.get("month"));
   const file = formData.get("file");
-
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Choose a TimeEntries CSV to import." };
-  }
-  if (!Number.isFinite(year) || !Number.isFinite(month)) {
-    return { ok: false, error: "Missing the month to import into." };
+    return { ok: false, error: "Choose a TimeEntries CSV to review." };
   }
 
   let parsed;
@@ -43,35 +58,79 @@ export async function importTimeEntriesAction(formData: FormData): Promise<Impor
     .returns<Profile[]>();
   const byName = new Map((staff ?? []).map((s) => [normaliseName(s.full_name), s]));
 
-  const toPost: { staffId: string; hours: number }[] = [];
-  const unmatched: { raw_name: string; display_name: string; hours: number }[] = [];
-  let skippedSalaried = 0;
-
-  for (const total of parsed.totals) {
+  const lines: PreviewLine[] = parsed.totals.map((total) => {
     const match = byName.get(normaliseName(total.displayName));
     if (!match) {
-      unmatched.push({ raw_name: total.rawName, display_name: total.displayName, hours: total.hours });
-      continue;
+      return { ...total, status: "unmatched", staffId: null, matchedName: null };
     }
     if (match.employment_type === "salaried") {
-      skippedSalaried++;
-      continue;
+      return { ...total, status: "salaried", staffId: match.id, matchedName: match.full_name };
     }
-    toPost.push({ staffId: match.id, hours: total.hours });
+    return { ...total, status: "post", staffId: match.id, matchedName: match.full_name };
+  });
+
+  return {
+    ok: true,
+    filename: file.name,
+    periodStart: parsed.periodStart,
+    periodEnd: parsed.periodEnd,
+    entryCount: parsed.entryCount,
+    lines,
+  };
+}
+
+export type CommitLine = {
+  displayName: string;
+  rawName: string;
+  hours: number;
+  staffId: string | null;
+  status: PreviewStatus;
+};
+
+export type CommitResult =
+  | { ok: true; posted: number; skippedSalaried: number; unmatched: number; excluded: number }
+  | { ok: false; error: string };
+
+// Writes only what survived the review. Excluded rows are simply absent from
+// `lines` — they leave no trace beyond the count, which is the point: they
+// aren't staff, so there's nothing to follow up.
+export async function commitTimeEntriesAction(payload: {
+  year: number;
+  month: number;
+  filename: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  entryCount: number;
+  excluded: number;
+  lines: CommitLine[];
+}): Promise<CommitResult> {
+  const { supabase, user, profile } = await requireAdmin();
+
+  const { year, month, lines } = payload;
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    return { ok: false, error: "Missing the month to import into." };
   }
+  if (lines.length === 0) {
+    return { ok: false, error: "Every row was excluded — nothing to import." };
+  }
+
+  const toPost = lines.filter((l) => l.status === "post" && l.staffId);
+  const unmatched = lines.filter((l) => l.status === "unmatched");
+  const skippedSalaried = lines.filter((l) => l.status === "salaried").length;
 
   const { data: imported, error: importError } = await supabase
     .from("hours_imports")
     .insert({
       year,
       month,
-      filename: file.name,
-      period_start: parsed.periodStart,
-      period_end: parsed.periodEnd,
-      entry_count: parsed.entryCount,
+      filename: payload.filename,
+      period_start: payload.periodStart,
+      period_end: payload.periodEnd,
+      entry_count: payload.entryCount,
       matched_count: toPost.length,
       skipped_salaried: skippedSalaried,
-      total_hours: toPost.reduce((sum, r) => sum + r.hours, 0),
+      excluded_count: payload.excluded,
+      total_hours: toPost.reduce((sum, r) => sum + Number(r.hours), 0),
       imported_by: user.id,
       imported_by_name: profile.full_name,
     })
@@ -83,46 +142,50 @@ export async function importTimeEntriesAction(formData: FormData): Promise<Impor
   }
 
   if (toPost.length > 0) {
-    // Replace whatever's there for these people this month — the file is the
-    // whole period, so it's the truth. Deleting first (rather than upserting)
-    // hands ownership to this import, so removing it takes these rows with it.
+    // The file is the whole period, so it replaces what's there for these
+    // people. Deleting first hands ownership to this import, so removing it
+    // takes these rows with it.
     await supabase
       .from("monthly_hours")
       .delete()
       .eq("year", year)
       .eq("month", month)
-      .in("staff_id", toPost.map((r) => r.staffId));
+      .in("staff_id", toPost.map((r) => r.staffId as string));
 
     const { error: hoursError } = await supabase.from("monthly_hours").insert(
       toPost.map((r) => ({
-        staff_id: r.staffId,
+        staff_id: r.staffId as string,
         year,
         month,
-        hours_worked: r.hours,
+        hours_worked: Number(r.hours),
         entered_by: user.id,
         import_id: imported.id,
       })),
     );
     if (hoursError) {
-      // Roll the import back rather than leaving a half-applied one behind.
       await supabase.from("hours_imports").delete().eq("id", imported.id);
       return { ok: false, error: hoursError.message };
     }
   }
 
   if (unmatched.length > 0) {
-    await supabase
-      .from("hours_import_unmatched")
-      .insert(unmatched.map((u) => ({ ...u, import_id: imported.id })));
+    await supabase.from("hours_import_unmatched").insert(
+      unmatched.map((u) => ({
+        import_id: imported.id,
+        raw_name: u.rawName,
+        display_name: u.displayName,
+        hours: Number(u.hours),
+      })),
+    );
   }
 
   revalidatePath("/admin/hours");
   return {
     ok: true,
-    importId: imported.id,
     posted: toPost.length,
     skippedSalaried,
     unmatched: unmatched.length,
+    excluded: payload.excluded,
   };
 }
 
@@ -170,7 +233,6 @@ export async function linkUnmatchedAction(unmatchedId: string, profileId: string
 
   await supabase.from("profiles").update({ full_name: row.display_name }).eq("id", profileId);
 
-  // Salaried staff are matched but never posted, same rule as the import.
   if (target.employment_type !== "salaried") {
     const { year, month } = row.hours_imports;
     await supabase.from("monthly_hours").delete().eq("year", year).eq("month", month).eq("staff_id", profileId);
@@ -192,9 +254,23 @@ export async function linkUnmatchedAction(unmatchedId: string, profileId: string
   revalidatePath("/admin/hours");
 }
 
+// Dismisses an outstanding name without posting anything — for a row that got
+// through the review but turns out not to be an employee after all. Scoped to
+// this import only; the same name will be reviewed again next time.
+export async function dismissUnmatchedAction(unmatchedId: string) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from("hours_import_unmatched")
+    .update({ resolved_at: new Date().toISOString() })
+    .eq("id", unmatchedId);
+  if (error) {
+    throw new Error(error.message);
+  }
+  revalidatePath("/admin/hours");
+}
+
 // After adding the missing people to Staff, re-runs matching for anything
-// still outstanding on an import — so several new starters are picked up in
-// one go rather than one at a time.
+// still outstanding on an import.
 export async function recheckUnmatchedAction(importId: string) {
   const { supabase, user } = await requireAdmin();
 

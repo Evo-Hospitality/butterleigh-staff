@@ -33,13 +33,30 @@ export default async function BalancesPage({
           The 2026 opening balances came across from the Excel holiday tracker this replaced, and
           are the closing balances as at the <strong>31 July 2026 payroll</strong>.
         </p>
-        <p className="rounded-md bg-yellow-50 px-3 py-2 text-yellow-900">
-          <strong>Each leave year starts from scratch.</strong> Nothing is carried over
-          automatically on 1 January — a new year begins with an opening balance of zero, salaried
-          staff get the full allowance from their staff record, and hourly staff accrue from that
-          year&apos;s hours alone. Whatever should carry into {year + 1} has to be entered here
-          against {year + 1} deliberately.
-        </p>
+        <div className="rounded-md bg-yellow-50 px-3 py-2 text-yellow-900">
+          <p className="mb-2">
+            <strong>Nothing rolls over on its own.</strong> A leave year only exists once an admin
+            sets it up — until then a new year shows an opening balance of zero for everyone, and{" "}
+            <strong>no holiday in that year can be approved at all</strong>.
+          </p>
+          <p className="mb-2">
+            Use <strong>Roll {year} into {year + 1}</strong> to set it up. Once processed:
+          </p>
+          <ul className="mb-2 list-disc pl-5">
+            <li>
+              <strong>Hourly</strong> carry their full remaining balance forward as their opening
+              figure, and then accrue on top of it from {year + 1}&apos;s hours as those are
+              imported. Nothing they&apos;ve accrued and not taken is lost.
+            </li>
+            <li>
+              <strong>Salaried</strong> start at zero and get the full allowance from their staff
+              record — the allowance is the entitlement, so carrying a balance across as well would
+              count it twice. Anyone who started part-way through {year} on a pro-rated allowance
+              gets the full one in {year + 1}.
+            </li>
+          </ul>
+          <p>Every figure is editable before you commit, and re-running is safe.</p>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">

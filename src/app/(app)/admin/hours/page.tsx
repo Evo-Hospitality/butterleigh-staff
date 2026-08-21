@@ -3,9 +3,11 @@ import type { Profile, MonthlyHoursEntry } from "@/lib/types";
 import { HoursForm } from "./hours-form";
 import { HoursImportPanel, type ImportRow, type UnmatchedRow } from "@/components/hours-import-panel";
 import {
+  commitTimeEntriesAction,
   deleteHoursImportAction,
-  importTimeEntriesAction,
+  dismissUnmatchedAction,
   linkUnmatchedAction,
+  previewTimeEntriesAction,
   recheckUnmatchedAction,
 } from "./import-actions";
 
@@ -62,6 +64,7 @@ export default async function MonthlyHoursPage({
     entry_count: imp.entry_count,
     matched_count: imp.matched_count,
     skipped_salaried: imp.skipped_salaried,
+    excluded_count: imp.excluded_count ?? 0,
     total_hours: imp.total_hours,
     imported_by_name: imp.imported_by_name,
     created_at: imp.created_at,
@@ -105,9 +108,11 @@ export default async function MonthlyHoursPage({
         monthLabel={monthLabel}
         imports={importRows}
         staff={allStaff ?? []}
-        importAction={importTimeEntriesAction}
+        previewAction={previewTimeEntriesAction}
+        commitAction={commitTimeEntriesAction}
         deleteAction={deleteHoursImportAction}
         linkAction={linkUnmatchedAction}
+        dismissAction={dismissUnmatchedAction}
         recheckAction={recheckUnmatchedAction}
       />
 
