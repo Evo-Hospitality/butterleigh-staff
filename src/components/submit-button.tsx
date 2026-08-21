@@ -12,6 +12,7 @@ export function SubmitButton({
   pendingLabel,
   disabled = false,
   formAction,
+  formNoValidate = false,
   className = "self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
 }: {
   children: React.ReactNode;
@@ -23,6 +24,9 @@ export function SubmitButton({
   // For a second submit button that posts to a different action (SOPs'
   // "Save draft" alongside "Publish").
   formAction?: (formData: FormData) => Promise<void>;
+  // For a draft button on a form of required fields — saving what you have
+  // so far shouldn't be blocked by the boxes you haven't reached yet.
+  formNoValidate?: boolean;
   className?: string;
 }) {
   // Pending is per-form, not per-button, so on a two-button form both
@@ -30,7 +34,13 @@ export function SubmitButton({
   // shouldn't be able to hit "Save draft" mid-publish either.
   const { pending } = useFormStatus();
   return (
-    <button type="submit" formAction={formAction} disabled={pending || disabled} className={className}>
+    <button
+      type="submit"
+      formAction={formAction}
+      formNoValidate={formNoValidate}
+      disabled={pending || disabled}
+      className={className}
+    >
       {pending ? (pendingLabel ?? "Saving…") : children}
     </button>
   );

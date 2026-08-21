@@ -5,15 +5,16 @@ import { BankFields, EmergencyFields, PersonalFields } from "@/components/employ
 import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
 import { documentsWithUrls } from "@/lib/onboarding/details";
 import type { EmployeeDetails, EmployeeDocument } from "@/lib/types";
-import { submitOnboardingAction } from "./actions";
+import { formatDateTime } from "@/lib/format";
+import { saveOnboardingDraftAction, submitOnboardingAction } from "./actions";
 
 export default async function OnboardingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; submitted?: string }>;
+  searchParams: Promise<{ error?: string; submitted?: string; draft?: string }>;
 }) {
   const { supabase, user, profile } = await requireUser();
-  const { error, submitted } = await searchParams;
+  const { error, submitted, draft } = await searchParams;
 
   // Anyone who doesn't need this shouldn't be able to sit on the page.
   if (profile.onboarding_status === "approved" || profile.onboarding_status === "not_required") {
@@ -34,6 +35,8 @@ export default async function OnboardingPage({
 
   const waiting = profile.onboarding_status === "submitted";
   const sentBack = profile.onboarding_status === "pending" && !!details?.review_note;
+  // A row with no submitted_at is a part-finished draft they came back to.
+  const resumed = !!details && !details.submitted_at;
 
   if (waiting) {
     return (
@@ -63,6 +66,18 @@ export default async function OnboardingPage({
 
       {submitted && (
         <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">Sent — thanks.</p>
+      )}
+      {draft && (
+        <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+          Saved. Come back whenever you&apos;re ready — nothing has been sent yet.
+        </p>
+      )}
+      {resumed && !draft && (
+        <p className="mb-4 rounded-md bg-muted px-3 py-2 text-sm">
+          Picked up where you left off
+          {details?.updated_at ? ` — last saved ${formatDateTime(details.updated_at)}` : ""}. Nothing
+          has been sent yet.
+        </p>
       )}
       {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
@@ -141,7 +156,24 @@ export default async function OnboardingPage({
           <BankFields details={details ?? null} />
         </section>
 
-        <SubmitButton pendingLabel="Sending…">Send for approval</SubmitButton>
+        <div className="flex flex-wrap items-center gap-3">
+          <SubmitButton pendingLabel="Sending…">Send for approval</SubmitButton>
+          {/* No validation on this one — the point is to save what you have
+              when you're stuck, not to be blocked by the boxes you haven't
+              got to yet. */}
+          <SubmitButton
+            formAction={saveOnboardingDraftAction}
+            formNoValidate
+            pendingLabel="Saving…"
+            className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-primary hover:border-accent hover:text-accent disabled:opacity-50"
+          >
+            Save and finish later
+          </SubmitButton>
+        </div>
+        <p className="-mt-4 text-xs text-muted-foreground">
+          Stuck on the HMRC checklist? Save what you&apos;ve got and come back to it — everything
+          stays exactly as you left it, and nothing goes to a manager until you send it.
+        </p>
       </form>
     </div>
   );

@@ -12,11 +12,74 @@ import {
   saveEmployeeDocuments,
 } from "@/lib/onboarding/details";
 import { notifyOnboardingSubmitted } from "@/lib/onboarding/notifications";
+import type { BankFields, DetailFields } from "@/lib/onboarding/details";
 import { updateStaffEmail } from "@/lib/holiday/staff";
 import type { EmployeeDetails } from "@/lib/types";
 
 function fail(message: string): never {
   redirect(`/onboarding?error=${encodeURIComponent(message)}`);
+}
+
+// Date columns reject an empty string, which a half-filled draft is full of.
+function detailRow(fields: DetailFields, bank: BankFields) {
+  return {
+    ...fields,
+    ...bank,
+    start_date: fields.start_date || null,
+    date_of_birth: fields.date_of_birth || null,
+  };
+}
+
+// Filling this in means finding an NI number and getting through the HMRC
+// site, which people can't always do in one sitting — so they can put down
+// what they have and come back to it. A draft is just the same row without
+// submitted_at: nothing is sent to an admin, and the gate stays closed.
+export async function saveOnboardingDraftAction(formData: FormData) {
+  const { supabase, user, profile } = await requireUser();
+
+  if (profile.onboarding_status === "approved" || profile.onboarding_status === "not_required") {
+    redirect("/");
+  }
+  if (profile.onboarding_status === "submitted") {
+    redirect("/onboarding");
+  }
+
+  if (documentsStillUploading(formData)) {
+    fail("Hang on a moment — a file is still uploading.");
+  }
+
+  try {
+    await saveEmployeeDocuments(supabase, user.id, readPendingDocuments(formData), {
+      id: user.id,
+      name: profile.full_name,
+    });
+  } catch (err) {
+    fail(err instanceof Error ? err.message : "Could not save the uploaded files.");
+  }
+
+  const { data: existing } = await supabase
+    .from("employee_details")
+    .select("id")
+    .eq("staff_id", user.id)
+    .maybeSingle<{ id: string }>();
+
+  // Deliberately keeps any review_note: if this was sent back, the reason
+  // should still be on screen when they return to finish it.
+  const row = {
+    staff_id: user.id,
+    ...detailRow(readDetailFields(formData), readBankFields(formData)),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = existing
+    ? await supabase.from("employee_details").update(row).eq("staff_id", user.id)
+    : await supabase.from("employee_details").insert(row);
+  if (error) {
+    fail(error.message);
+  }
+
+  revalidatePath("/onboarding");
+  redirect("/onboarding?draft=1");
 }
 
 export async function submitOnboardingAction(formData: FormData) {
@@ -68,8 +131,7 @@ export async function submitOnboardingAction(formData: FormData) {
 
   const row = {
     staff_id: user.id,
-    ...fields,
-    ...bank,
+    ...detailRow(fields, bank),
     submitted_at: new Date().toISOString(),
     // Clear any previous send-back note, so the reviewer isn't reading a
     // stale reason against a fresh submission.
