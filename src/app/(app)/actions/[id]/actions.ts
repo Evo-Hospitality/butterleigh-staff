@@ -129,7 +129,16 @@ export async function setStatusAction(actionId: string, status: "open" | "closed
   if (action.submitted_by) {
     await notifyActionUpdate(action.submitted_by, actionId, action.title, profile.full_name, note);
   }
+
   revalidatePath(`/actions/${actionId}`);
+  revalidatePath("/actions");
+
+  // Closing it means you're done with this one — go back to the list rather
+  // than leaving you on a detail page you've finished with. Reopening keeps
+  // you here, since you're presumably about to work on it.
+  if (status === "closed") {
+    redirect("/actions");
+  }
 }
 
 // Admin-only, and only for closed Actions — uses the service-role client so
