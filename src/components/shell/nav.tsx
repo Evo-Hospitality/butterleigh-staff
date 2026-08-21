@@ -60,7 +60,11 @@ export function Nav({ profile }: { profile: Profile }) {
               Admin
             </Link>
           )}
-          <span className="text-primary-foreground/70">{profile.full_name}</span>
+          {/* Their own name is the way in to their payroll record — no room
+              in the bar for another top-level link. */}
+          <Link href="/my-details" className="text-primary-foreground/70 hover:text-accent">
+            {profile.full_name}
+          </Link>
           <form action={signOut}>
             <button type="submit" className="hover:text-accent">
               Sign out

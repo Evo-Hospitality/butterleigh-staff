@@ -15,6 +15,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/auth/set-password");
   }
 
+  // New starters get no access to any mini-app until their employment
+  // details are in and an admin has approved them — payroll can't run
+  // without an HMRC checklist, so there's no point letting them wander in.
+  // /onboarding deliberately sits outside this layout, or this would loop.
+  // Impersonation is exempt for the same reason as the password gate: an
+  // admin acting for someone shouldn't be filling in their personal details.
+  if (
+    !impersonation &&
+    profile.onboarding_status !== "not_required" &&
+    profile.onboarding_status !== "approved"
+  ) {
+    redirect("/onboarding");
+  }
+
   return (
     <>
       {impersonation && (

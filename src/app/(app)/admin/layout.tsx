@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 
 const TABS = [
   { href: "/admin/staff", label: "Staff" },
+  { href: "/admin/onboarding", label: "Employee details" },
   { href: "/admin/org-chart", label: "Org chart" },
   { href: "/admin/bank-holidays", label: "Bank holidays" },
   { href: "/admin/hours", label: "Monthly hours" },

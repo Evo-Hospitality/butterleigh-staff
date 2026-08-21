@@ -1,4 +1,52 @@
 export type EmploymentType = "salaried" | "hourly";
+
+// not_required = existing staff at go-live, or anyone an admin exempts.
+export type OnboardingStatus = "not_required" | "pending" | "submitted" | "approved";
+
+export type EmployeeDetails = {
+  id: string;
+  staff_id: string;
+  full_name: string | null;
+  start_date: string | null;
+  ni_number: string | null;
+  date_of_birth: string | null;
+  home_address: string | null;
+  mobile_phone: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_email: string | null;
+  bank_name: string | null;
+  bank_sort_code: string | null;
+  bank_account_number: string | null;
+  hmrc_checklist_path: string | null;
+  submitted_at: string | null;
+  reviewed_by: string | null;
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BankChangeStatus = "pending" | "approved" | "rejected";
+
+export type BankChangeRequest = {
+  id: string;
+  staff_id: string;
+  staff_name: string;
+  bank_name: string;
+  bank_sort_code: string;
+  bank_account_number: string;
+  previous_bank_name: string | null;
+  previous_bank_sort_code: string | null;
+  previous_bank_account_number: string | null;
+  status: BankChangeStatus;
+  requested_at: string;
+  reviewed_by: string | null;
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+};
 export type StaffRole = "staff" | "admin";
 export type RequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
@@ -16,6 +64,7 @@ export type Profile = {
   active: boolean;
   invited_at: string | null;
   must_change_password: boolean;
+  onboarding_status: OnboardingStatus;
   start_date: string | null;
   has_maintenance_access: boolean;
   created_at: string;
