@@ -73,9 +73,19 @@ export default async function ActionDetailPage({
 
   return (
     <div>
-      <Link href="/actions" className="text-sm text-muted-foreground hover:text-accent">
-        &larr; Back to Actions
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/actions" className="text-sm text-muted-foreground hover:text-accent">
+          &larr; Back to Actions
+        </Link>
+        {/* You land here straight after raising one — this is where the
+            "actually, one more" thought happens. */}
+        <Link
+          href="/actions/new"
+          className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-semibold hover:border-accent"
+        >
+          Raise another Action
+        </Link>
+      </div>
 
       <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold text-primary">{action.title}</h1>

@@ -11,7 +11,10 @@ function fail(message: string): never {
   redirect(`/actions/new?error=${encodeURIComponent(message)}`);
 }
 
-export async function createActionAction(formData: FormData) {
+// Shared by both submit buttons — returns the new (or, on a duplicate
+// press, the already-created) Action's id and leaves the redirect to the
+// caller, since that's the only thing the two paths differ on.
+async function createAction(formData: FormData): Promise<string> {
   const { supabase, user, profile } = await requireActionItemsAccess();
 
   const title = String(formData.get("title") ?? "").trim();
@@ -71,7 +74,7 @@ export async function createActionAction(formData: FormData) {
       .eq("submission_token", submissionToken)
       .maybeSingle();
     if (existing) {
-      redirect(`/actions/${existing.id}`);
+      return existing.id;
     }
   }
 
@@ -81,5 +84,18 @@ export async function createActionAction(formData: FormData) {
 
   await notifyActionAssigned(chosen.id, action.id, title, profile.full_name);
 
-  redirect(`/actions/${action.id}`);
+  return action.id;
+}
+
+export async function createActionAction(formData: FormData) {
+  const id = await createAction(formData);
+  redirect(`/actions/${id}`);
+}
+
+// "Save & add another" — for entering a run of Actions in one sitting.
+// Goes straight back to an empty form instead of the detail page, which
+// also re-renders a fresh submission token.
+export async function createActionAndAnotherAction(formData: FormData) {
+  await createAction(formData);
+  redirect("/actions/new?created=1");
 }

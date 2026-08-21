@@ -1,16 +1,17 @@
+import Link from "next/link";
 import { requireActionItemsAccess } from "@/lib/auth";
 import { isManagerOrAdmin, type Profile } from "@/lib/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SubmitButton } from "@/components/submit-button";
-import { createActionAction } from "./actions";
+import { createActionAction, createActionAndAnotherAction } from "./actions";
 
 export default async function NewActionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; created?: string }>;
 }) {
   await requireActionItemsAccess();
-  const { error } = await searchParams;
+  const { error, created } = await searchParams;
 
   // Everyone who can reach this page is already a manager/admin, so the
   // "Assign to" dropdown always shows — unlike Maintenance, there's no
@@ -28,6 +29,15 @@ export default async function NewActionPage({
       <h1 className="mb-6 text-2xl font-bold text-primary">Raise an Action</h1>
       {error && (
         <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+      {created && !error && (
+        <p className="mb-4 max-w-md rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+          Action raised. Add another below, or{" "}
+          <Link href="/actions" className="font-semibold underline">
+            go back to Actions
+          </Link>
+          .
+        </p>
       )}
 
       <form
@@ -85,7 +95,16 @@ export default async function NewActionPage({
           </select>
         </div>
 
-        <SubmitButton pendingLabel="Submitting…">Submit</SubmitButton>
+        <div className="flex flex-wrap gap-2">
+          <SubmitButton pendingLabel="Submitting…">Submit</SubmitButton>
+          <SubmitButton
+            formAction={createActionAndAnotherAction}
+            pendingLabel="Saving…"
+            className="self-start rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Save &amp; add another
+          </SubmitButton>
+        </div>
       </form>
     </div>
   );
