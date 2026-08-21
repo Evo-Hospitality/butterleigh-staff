@@ -17,6 +17,7 @@ export async function createMaintenanceRequestAction(formData: FormData) {
   const description = formData.get("description");
   const assignedToId = formData.get("assigned_to");
   const photo = formData.get("photo");
+  const submissionToken = String(formData.get("submission_token") ?? "") || null;
 
   if (!title) {
     fail("Give the issue a short title.");
@@ -63,9 +64,24 @@ export async function createMaintenanceRequestAction(formData: FormData) {
       title,
       description: description ? String(description) : null,
       photo_url: photoUrl,
+      submission_token: submissionToken,
     })
     .select()
     .single();
+
+  // 23505 = unique violation on submission_token: this exact form was
+  // already submitted (double-press, retry, second tab). Send them to the
+  // request the first press created rather than making a second one.
+  if (error?.code === "23505" && submissionToken) {
+    const { data: existing } = await supabase
+      .from("maintenance_requests")
+      .select("id")
+      .eq("submission_token", submissionToken)
+      .maybeSingle();
+    if (existing) {
+      redirect(`/maintenance/${existing.id}`);
+    }
+  }
 
   if (error || !request) {
     fail(error?.message ?? "Failed to create request.");

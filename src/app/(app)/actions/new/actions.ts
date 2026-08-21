@@ -18,6 +18,7 @@ export async function createActionAction(formData: FormData) {
   const notes = formData.get("notes");
   const assignedToId = formData.get("assigned_to");
   const photo = formData.get("photo");
+  const submissionToken = String(formData.get("submission_token") ?? "") || null;
 
   if (!title) {
     fail("Give it a short title.");
@@ -54,9 +55,25 @@ export async function createActionAction(formData: FormData) {
       title,
       notes: notes ? String(notes) : null,
       photo_url: photoUrl,
+      submission_token: submissionToken,
     })
     .select()
     .single();
+
+  // 23505 = unique violation on submission_token: this exact form was
+  // already submitted (double-press, retry, second tab). The first press
+  // did the work, so send them to that Action rather than erroring or
+  // creating a second one.
+  if (error?.code === "23505" && submissionToken) {
+    const { data: existing } = await supabase
+      .from("action_items")
+      .select("id")
+      .eq("submission_token", submissionToken)
+      .maybeSingle();
+    if (existing) {
+      redirect(`/actions/${existing.id}`);
+    }
+  }
 
   if (error || !action) {
     fail(error?.message ?? "Failed to create this Action.");

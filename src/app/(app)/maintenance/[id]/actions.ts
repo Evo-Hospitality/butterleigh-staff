@@ -132,7 +132,15 @@ export async function setStatusAction(requestId: string, status: "open" | "close
   if (request.submitted_by) {
     await notifyMaintenanceUpdate(request.submitted_by, requestId, request.title, profile.full_name, note);
   }
+
   revalidatePath(`/maintenance/${requestId}`);
+  revalidatePath("/maintenance");
+
+  // Matches Actions: closing sends you back to the list, reopening keeps
+  // you here since you're presumably about to work on it.
+  if (status === "closed") {
+    redirect("/maintenance");
+  }
 }
 
 // Admin-only, and only for closed requests — uses the service-role client so

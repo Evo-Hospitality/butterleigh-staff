@@ -1,6 +1,7 @@
 import { requireActionItemsAccess } from "@/lib/auth";
 import { isManagerOrAdmin, type Profile } from "@/lib/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SubmitButton } from "@/components/submit-button";
 import { createActionAction } from "./actions";
 
 export default async function NewActionPage({
@@ -34,6 +35,10 @@ export default async function NewActionPage({
         encType="multipart/form-data"
         className="flex max-w-md flex-col gap-4"
       >
+        {/* Fresh per render, so both presses of one button carry the same
+            value and the second is rejected as a duplicate server-side. */}
+        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
+
         <div>
           <label className="mb-1 block text-sm font-medium">Title</label>
           <input
@@ -80,12 +85,7 @@ export default async function NewActionPage({
           </select>
         </div>
 
-        <button
-          type="submit"
-          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-        >
-          Submit
-        </button>
+        <SubmitButton pendingLabel="Submitting…">Submit</SubmitButton>
       </form>
     </div>
   );

@@ -1,5 +1,6 @@
 import { requireMaintenanceAccess } from "@/lib/auth";
 import { canBeAssignedMaintenance, type Profile } from "@/lib/types";
+import { SubmitButton } from "@/components/submit-button";
 import { createMaintenanceRequestAction } from "./actions";
 
 export default async function NewMaintenanceRequestPage({
@@ -33,6 +34,10 @@ export default async function NewMaintenanceRequestPage({
         encType="multipart/form-data"
         className="flex max-w-md flex-col gap-4"
       >
+        {/* Fresh per render, so both presses of one button carry the same
+            value and the second is rejected as a duplicate server-side. */}
+        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
+
         <div>
           <label className="mb-1 block text-sm font-medium">Title</label>
           <input
@@ -81,12 +86,7 @@ export default async function NewMaintenanceRequestPage({
           </div>
         )}
 
-        <button
-          type="submit"
-          className="self-start rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-        >
-          Submit
-        </button>
+        <SubmitButton pendingLabel="Submitting…">Submit</SubmitButton>
       </form>
     </div>
   );
