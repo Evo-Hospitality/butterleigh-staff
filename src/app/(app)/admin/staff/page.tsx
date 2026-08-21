@@ -2,8 +2,10 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import type { LeaveBalance, Profile } from "@/lib/types";
 import { proratedAllowance } from "@/lib/holiday/proration";
+import { StaffTables, type StaffRow } from "@/components/staff-tables";
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Index 0 = Sunday, matching profiles.working_days.
+const DAY_SHORT = ["Su", "M", "T", "W", "Th", "F", "Sa"];
 
 export default async function StaffListPage() {
   const { supabase } = await requireAdmin();
@@ -15,6 +17,31 @@ export default async function StaffListPage() {
   ]);
 
   const balanceByStaff = new Map((balances ?? []).map((b) => [b.staff_id, b]));
+  const all = staff ?? [];
+
+  const toRow = (person: Profile): StaffRow => ({
+    id: person.id,
+    fullName: person.full_name,
+    email: person.email,
+    employmentType: person.employment_type,
+    workingDays: person.working_days.map((d) => DAY_SHORT[d]).join(" "),
+    allowance:
+      person.employment_type === "salaried"
+        ? `${
+            balanceByStaff.get(person.id)?.base_allowance ??
+            (person.annual_allowance_days
+              ? proratedAllowance(person.annual_allowance_days, person.start_date, year)
+              : "—")
+          } days`
+        : "12.07% accrual",
+    manager: all.find((m) => m.id === person.manager_id)?.full_name ?? "—",
+    role: person.role,
+    invited: person.invited_at ? new Date(person.invited_at).toLocaleDateString() : "Not invited",
+  });
+
+  // No Status column — which table someone is in says it.
+  const active = all.filter((p) => p.active).map(toRow);
+  const archived = all.filter((p) => !p.active).map(toRow);
 
   return (
     <div>
@@ -28,57 +55,7 @@ export default async function StaffListPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-left text-muted-foreground">
-            <tr>
-              <th className="px-4 py-2 font-medium">Name</th>
-              <th className="px-4 py-2 font-medium">Email</th>
-              <th className="px-4 py-2 font-medium">Type</th>
-              <th className="px-4 py-2 font-medium">Working days</th>
-              <th className="px-4 py-2 font-medium">Allowance</th>
-              <th className="px-4 py-2 font-medium">Manager</th>
-              <th className="px-4 py-2 font-medium">Role</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Invite</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staff?.map((person) => (
-              <tr key={person.id} className="border-t border-border">
-                <td className="px-4 py-2">
-                  <Link href={`/admin/staff/${person.id}`} className="font-medium hover:text-accent">
-                    {person.full_name}
-                  </Link>
-                </td>
-                <td className="px-4 py-2 text-muted-foreground">{person.email}</td>
-                <td className="px-4 py-2 capitalize">{person.employment_type}</td>
-                <td className="px-4 py-2">
-                  {person.working_days.map((d) => DAY_LABELS[d]).join(", ")}
-                </td>
-                <td className="px-4 py-2">
-                  {person.employment_type === "salaried"
-                    ? `${
-                        balanceByStaff.get(person.id)?.base_allowance ??
-                        (person.annual_allowance_days
-                          ? proratedAllowance(person.annual_allowance_days, person.start_date, year)
-                          : "—")
-                      } days`
-                    : "12.07% accrual"}
-                </td>
-                <td className="px-4 py-2">
-                  {staff.find((m) => m.id === person.manager_id)?.full_name ?? "—"}
-                </td>
-                <td className="px-4 py-2 capitalize">{person.role}</td>
-                <td className="px-4 py-2">{person.active ? "Active" : "Archived"}</td>
-                <td className="px-4 py-2 text-muted-foreground">
-                  {person.invited_at ? new Date(person.invited_at).toLocaleDateString() : "Not invited"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <StaffTables active={active} archived={archived} />
     </div>
   );
 }
