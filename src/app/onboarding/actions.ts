@@ -49,10 +49,13 @@ export async function saveOnboardingDraftAction(formData: FormData) {
   }
 
   try {
-    await saveEmployeeDocuments(supabase, user.id, readPendingDocuments(formData), {
-      id: user.id,
-      name: profile.full_name,
-    });
+    await saveEmployeeDocuments(
+      supabase,
+      user.id,
+      readPendingDocuments(formData),
+      { id: user.id, name: profile.full_name },
+      { documentType: "HMRC Starter Checklist", visibleToStaff: true },
+    );
   } catch (err) {
     fail(err instanceof Error ? err.message : "Could not save the uploaded files.");
   }
@@ -121,10 +124,13 @@ export async function submitOnboardingAction(formData: FormData) {
   }
 
   try {
-    await saveEmployeeDocuments(supabase, user.id, newDocuments, {
-      id: user.id,
-      name: profile.full_name,
-    });
+    await saveEmployeeDocuments(
+      supabase,
+      user.id,
+      newDocuments,
+      { id: user.id, name: profile.full_name },
+      { documentType: "HMRC Starter Checklist", visibleToStaff: true },
+    );
   } catch (err) {
     fail(err instanceof Error ? err.message : "Could not save the uploaded files.");
   }

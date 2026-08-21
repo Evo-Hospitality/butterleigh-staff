@@ -117,11 +117,15 @@ export async function deleteStaff(staffId: string) {
   // Their employee_documents rows go with the cascade, but the files behind
   // them don't — and a private bucket quietly keeping someone's HMRC
   // checklist after they've been deleted is exactly the wrong outcome.
-  const { data: files } = await admin.storage.from("employee-documents").list(staffId);
-  if (files?.length) {
-    await admin.storage
-      .from("employee-documents")
-      .remove(files.map((f) => `${staffId}/${f.name}`));
+  // Two places: their own uploads, and anything an admin filed under
+  // admin/<id>/ (0036).
+  for (const folder of [staffId, `admin/${staffId}`]) {
+    const { data: files } = await admin.storage.from("employee-documents").list(folder);
+    if (files?.length) {
+      await admin.storage
+        .from("employee-documents")
+        .remove(files.map((f) => `${folder}/${f.name}`));
+    }
   }
 
   const { error } = await admin.auth.admin.deleteUser(staffId);

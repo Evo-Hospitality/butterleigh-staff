@@ -32,14 +32,19 @@ type Doc = {
 // them together would sail past the request size limit on a Server Action.
 export function EmployeeDocumentPicker({
   staffId,
+  pathPrefix,
   label = "+ Add file",
 }: {
-  // Whose folder to write into. Their own id normally; for an admin filling
-  // in someone else's record, that person's — which the storage policy
-  // allows for admins only.
   staffId: string;
+  // Where in the bucket to write. Defaults to the employee's own folder,
+  // which is what they can read. An admin filing something passes
+  // "admin/<staffId>" instead: the employee has no storage access there, so
+  // an internal document can't be fished out directly even though it sits on
+  // their record. See 0036.
+  pathPrefix?: string;
   label?: string;
 }) {
+  const prefix = pathPrefix ?? staffId;
   const [docs, setDocs] = useState<Doc[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,7 +71,7 @@ export function EmployeeDocumentPicker({
 
     const supabase = createClient();
     const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
-    const path = `${staffId}/${crypto.randomUUID()}.${ext}`;
+    const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage
       .from("employee-documents")
       .upload(path, file, { contentType: file.type });

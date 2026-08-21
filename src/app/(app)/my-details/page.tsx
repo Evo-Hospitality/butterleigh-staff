@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDate, formatDateTime } from "@/lib/format";
-import type { BankChangeRequest, EmployeeDetails } from "@/lib/types";
+import { documentsWithUrls } from "@/lib/onboarding/details";
+import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
 
 function Row({ label, value }: { label: string; value: string | null }) {
@@ -51,7 +52,7 @@ export default async function MyDetailsPage({
   const { supabase, user, profile } = await requireUser();
   const { error, saved, bank } = await searchParams;
 
-  const [{ data: details }, { data: bankRequests }] = await Promise.all([
+  const [{ data: details }, { data: bankRequests }, { data: documents }] = await Promise.all([
     supabase.from("employee_details").select("*").eq("staff_id", user.id).maybeSingle<EmployeeDetails>(),
     supabase
       .from("bank_change_requests")
@@ -60,7 +61,17 @@ export default async function MyDetailsPage({
       .order("requested_at", { ascending: false })
       .limit(5)
       .returns<BankChangeRequest[]>(),
+    // RLS already limits this to documents shared with them — anything filed
+    // as internal never reaches the query.
+    supabase
+      .from("employee_documents")
+      .select("*")
+      .eq("staff_id", user.id)
+      .order("created_at", { ascending: false })
+      .returns<EmployeeDocument[]>(),
   ]);
+
+  const myDocuments = await documentsWithUrls(documents ?? []);
 
   const pendingBank = (bankRequests ?? []).find((r) => r.status === "pending");
   const decided = (bankRequests ?? []).filter((r) => r.status !== "pending");
@@ -91,6 +102,43 @@ export default async function MyDetailsPage({
         <Row label="Date of birth" value={details?.date_of_birth ? formatDate(details.date_of_birth) : null} />
         <Row label="National Insurance number" value={details?.ni_number ?? null} />
       </section>
+
+      {myDocuments.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-1 text-lg font-bold text-primary">Your documents</h2>
+          <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
+            Paperwork on your staff file that&apos;s been shared with you. Ask a manager if
+            you&apos;re expecting something that isn&apos;t here.
+          </p>
+          <ul className="flex max-w-xl flex-col gap-2">
+            {myDocuments.map((d) => (
+              <li
+                key={d.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="mr-2 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-primary">
+                    {d.document_type}
+                  </span>
+                  {d.url ? (
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-accent hover:underline"
+                    >
+                      {d.file_name}
+                    </a>
+                  ) : (
+                    d.file_name
+                  )}
+                </span>
+                <span className="text-xs text-muted-foreground">{formatDate(d.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-bold text-primary">Contact details</h2>

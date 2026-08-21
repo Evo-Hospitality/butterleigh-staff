@@ -8,6 +8,7 @@ import {
   readBankFields,
   readDetailFields,
   readPendingDocuments,
+  resolveDocumentType,
   saveEmployeeDocuments,
 } from "@/lib/onboarding/details";
 import { notifyBankChangeDecided, notifyOnboardingDecided } from "@/lib/onboarding/notifications";
@@ -230,11 +231,19 @@ export async function uploadEmployeeDocumentsAction(formData: FormData) {
     fail(staffId, "Choose at least one file first.");
   }
 
+  const documentType = await resolveDocumentType(supabase, formData);
+  // Unticked means internal, which is the safe way round for a box that
+  // decides whether someone reads their own warning letter.
+  const visibleToStaff = String(formData.get("visible_to_staff") ?? "") === "1";
+
   try {
-    await saveEmployeeDocuments(supabase, staffId, documents, {
-      id: user.id,
-      name: profile.full_name,
-    });
+    await saveEmployeeDocuments(
+      supabase,
+      staffId,
+      documents,
+      { id: user.id, name: profile.full_name },
+      { documentType, visibleToStaff },
+    );
   } catch (err) {
     fail(staffId, err instanceof Error ? err.message : "Could not save the uploaded files.");
   }
@@ -265,6 +274,29 @@ export async function deleteEmployeeDocumentAction(documentId: string, staffId: 
     fail(staffId, error.message);
   }
   await supabase.storage.from("employee-documents").remove([document.path]);
+
+  revalidatePath(`/admin/onboarding/${staffId}`);
+  redirect(`/admin/onboarding/${staffId}?saved=1`);
+}
+
+// Sharing a document with the employee after the fact, or taking it back.
+export async function setDocumentVisibilityAction(
+  documentId: string,
+  staffId: string,
+  visible: boolean,
+) {
+  const { supabase } = await requireAdmin();
+  if (!documentId || !staffId) {
+    redirect("/admin/onboarding");
+  }
+
+  const { error } = await supabase
+    .from("employee_documents")
+    .update({ visible_to_staff: visible })
+    .eq("id", documentId);
+  if (error) {
+    fail(staffId, error.message);
+  }
 
   revalidatePath(`/admin/onboarding/${staffId}`);
   redirect(`/admin/onboarding/${staffId}?saved=1`);

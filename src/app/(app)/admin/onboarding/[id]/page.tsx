@@ -3,14 +3,16 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
-import { documentsWithUrls } from "@/lib/onboarding/details";
+import { adminDocumentPrefix, documentTypeNames, documentsWithUrls } from "@/lib/onboarding/details";
 import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
+import { DocumentTypeSelect } from "@/components/document-type-select";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
 import {
   approveOnboardingAction,
   deleteEmployeeDocumentAction,
   saveEmployeeDetailsAction,
+  setDocumentVisibilityAction,
   sendBackOnboardingAction,
   setOnboardingRequiredAction,
   uploadEmployeeDocumentsAction,
@@ -72,7 +74,10 @@ export default async function AdminEmployeeDetailsPage({
 
   // Minted per view and short-lived — the bucket is private, so there is no
   // URL that keeps working after this page is closed.
-  const uploaded = await documentsWithUrls(documents ?? []);
+  const [uploaded, typeNames] = await Promise.all([
+    documentsWithUrls(documents ?? []),
+    documentTypeNames(supabase),
+  ]);
 
   const awaitingReview = person.onboarding_status === "submitted";
 
@@ -130,9 +135,9 @@ export default async function AdminEmployeeDetailsPage({
       <section className="mb-8">
         <h2 className="mb-1 text-lg font-bold text-primary">Documents</h2>
         <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
-          Their HMRC Starter Checklist, and anything that came with it. Often several photos of a
-          printed form rather than one PDF. You can add files here yourself — for someone whose
-          paperwork arrived on paper or by email.
+          Their whole staff file — starter checklist, contract, warning letters, right-to-work
+          checks. Several photos of a printed form count as one document filed several times over;
+          add them all.
         </p>
 
         {uploaded.length === 0 ? (
@@ -140,34 +145,46 @@ export default async function AdminEmployeeDetailsPage({
         ) : (
           <ul className="mb-4 flex max-w-xl flex-col gap-2">
             {uploaded.map((d) => (
-              <li
-                key={d.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
-              >
-                <span className="min-w-0 flex-1">
-                  {d.url ? (
-                    <a
-                      href={d.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-accent hover:underline"
-                    >
-                      {d.file_name}
-                    </a>
-                  ) : (
-                    d.file_name
-                  )}
-                  <span className="ml-2 text-xs text-muted-foreground">
+              <li key={d.id} className="rounded-md border border-border px-3 py-2 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="mr-2 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-primary">
+                      {d.document_type}
+                    </span>
+                    {d.url ? (
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-accent hover:underline"
+                      >
+                        {d.file_name}
+                      </a>
+                    ) : (
+                      d.file_name
+                    )}
+                  </span>
+                  <ConfirmDeleteButton
+                    action={deleteEmployeeDocumentAction.bind(null, d.id, person.id)}
+                    label="Delete"
+                    confirmMessage={`Delete "${d.file_name}"? This removes the file for good.`}
+                    className="text-xs font-semibold text-red-700 hover:underline"
+                  />
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span>
                     {formatDateTime(d.created_at)}
                     {d.uploaded_by_name ? ` · ${d.uploaded_by_name}` : ""}
                   </span>
-                </span>
-                <ConfirmDeleteButton
-                  action={deleteEmployeeDocumentAction.bind(null, d.id, person.id)}
-                  label="Delete"
-                  confirmMessage={`Delete "${d.file_name}"? This removes the file for good.`}
-                  className="text-xs font-semibold text-red-700 hover:underline"
-                />
+                  <span className={d.visible_to_staff ? "text-green-700" : "text-primary"}>
+                    {d.visible_to_staff ? "They can see this" : "Internal — they can't see it"}
+                  </span>
+                  <form action={setDocumentVisibilityAction.bind(null, d.id, person.id, !d.visible_to_staff)}>
+                    <button type="submit" className="font-semibold text-accent hover:underline">
+                      {d.visible_to_staff ? "Make internal" : "Share with them"}
+                    </button>
+                  </form>
+                </div>
               </li>
             ))}
           </ul>
@@ -175,7 +192,24 @@ export default async function AdminEmployeeDetailsPage({
 
         <form action={uploadEmployeeDocumentsAction} className="flex max-w-xl flex-col gap-3">
           <input type="hidden" name="staff_id" value={person.id} />
-          <EmployeeDocumentPicker staffId={person.id} label="+ Add a file" />
+          <DocumentTypeSelect types={typeNames} />
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="visible_to_staff" value="1" className="mt-1" />
+            <span>
+              Let {person.full_name} see this on their own My details page
+              <span className="block text-xs text-muted-foreground">
+                Leave unticked for anything internal. Their contract, yes; a note to file about
+                them, no. You can change your mind later.
+              </span>
+            </span>
+          </label>
+          {/* Filed outside their own storage folder, so an internal document
+              can't be read straight out of storage. */}
+          <EmployeeDocumentPicker
+            staffId={person.id}
+            pathPrefix={adminDocumentPrefix(person.id)}
+            label="+ Add a file"
+          />
           <SubmitButton pendingLabel="Saving…">Save files</SubmitButton>
         </form>
       </section>

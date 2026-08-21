@@ -143,6 +143,7 @@ export async function saveEmployeeDocuments(
   staffId: string,
   documents: PendingDocument[],
   uploadedBy: { id: string; name: string },
+  options: { documentType?: string; visibleToStaff?: boolean } = {},
 ): Promise<void> {
   if (documents.length === 0) return;
 
@@ -151,6 +152,10 @@ export async function saveEmployeeDocuments(
       staff_id: staffId,
       path: d.path,
       file_name: d.file_name,
+      document_type: options.documentType ?? "HMRC Starter Checklist",
+      // Defaults to false so an admin filing something has to decide to
+      // share it. A starter uploading their own form passes true.
+      visible_to_staff: options.visibleToStaff ?? false,
       uploaded_by: uploadedBy.id,
       uploaded_by_name: uploadedBy.name,
     })),
@@ -158,6 +163,47 @@ export async function saveEmployeeDocuments(
   if (error) {
     throw new Error(error.message);
   }
+}
+
+// Admin-filed documents live outside the employee's own storage folder, so
+// that an internal one can't be read straight from storage (0036).
+export function adminDocumentPrefix(staffId: string): string {
+  return `admin/${staffId}`;
+}
+
+export async function documentTypeNames(supabase: SupabaseClient): Promise<string[]> {
+  const { data } = await supabase
+    .from("employee_document_types")
+    .select("name")
+    .eq("active", true)
+    .order("sort_order")
+    .returns<{ name: string }[]>();
+  return (data ?? []).map((t) => t.name);
+}
+
+// A type typed into the "new type" box is added to the shared list, so the
+// next person filing the same thing finds it in the dropdown.
+export async function resolveDocumentType(
+  supabase: SupabaseClient,
+  formData: FormData,
+): Promise<string> {
+  const created = String(formData.get("new_document_type") ?? "").trim();
+  const chosen = String(formData.get("document_type") ?? "").trim();
+  if (!created) {
+    return chosen || "Other";
+  }
+
+  const { data: existing } = await supabase
+    .from("employee_document_types")
+    .select("name")
+    .ilike("name", created)
+    .maybeSingle<{ name: string }>();
+  if (existing) {
+    return existing.name;
+  }
+
+  await supabase.from("employee_document_types").insert({ name: created, sort_order: 500 });
+  return created;
 }
 
 // Each row gets its own short-lived link, minted per page view.

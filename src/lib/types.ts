@@ -34,8 +34,20 @@ export type EmployeeDocument = {
   staff_id: string;
   path: string;
   file_name: string;
+  document_type: string;
+  // Whether the employee can see this on their own My details page. False
+  // for anything an admin files unless they explicitly share it.
+  visible_to_staff: boolean;
   uploaded_by: string | null;
   uploaded_by_name: string | null;
+  created_at: string;
+};
+
+export type EmployeeDocumentType = {
+  id: string;
+  name: string;
+  sort_order: number;
+  active: boolean;
   created_at: string;
 };
 
