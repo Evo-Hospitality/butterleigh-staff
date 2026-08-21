@@ -266,6 +266,10 @@ export type CheckinItem = {
   discussed_by: string | null;
   discussed_by_name: string | null;
   outcome: string | null;
+  // Set when carried to next week — hidden from the board until this passes.
+  deferred_until: string | null;
+  carried_count: number;
+  last_carried_at: string | null;
   created_at: string;
 };
 

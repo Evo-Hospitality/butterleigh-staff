@@ -5,7 +5,14 @@ import { ChevronRight } from "lucide-react";
 import type { CheckinItem } from "@/lib/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 
-export type BoardGroup = { id: string; name: string; open: CheckinItem[]; discussed: CheckinItem[] };
+export type BoardGroup = {
+  id: string;
+  name: string;
+  open: CheckinItem[];
+  // Carried to next week — parked until tomorrow, still open.
+  carried: CheckinItem[];
+  discussed: CheckinItem[];
+};
 
 function AddItemForm({ groupId, action }: { groupId: string; action: (formData: FormData) => Promise<void> }) {
   const [open, setOpen] = useState(false);
@@ -66,13 +73,63 @@ function AddItemForm({ groupId, action }: { groupId: string; action: (formData: 
 function ItemRow({
   item,
   tickAction,
+  carryAction,
+  editAction,
   deleteAction,
 }: {
   item: CheckinItem;
   tickAction: (formData: FormData) => Promise<void>;
+  carryAction: (formData: FormData) => Promise<void>;
+  editAction: (formData: FormData) => Promise<void>;
   deleteAction: (id: string) => Promise<void>;
 }) {
   const [capturing, setCapturing] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <li className="rounded-md border border-accent p-3">
+        <form
+          action={async (formData) => {
+            await editAction(formData);
+            setEditing(false);
+          }}
+          className="flex flex-col gap-2"
+        >
+          <input type="hidden" name="item_id" value={item.id} />
+          <input
+            name="title"
+            required
+            autoFocus
+            defaultValue={item.title}
+            className="w-full rounded-md border border-border px-3 py-2 text-sm"
+          />
+          <textarea
+            name="notes"
+            rows={2}
+            defaultValue={item.notes ?? ""}
+            placeholder="Any detail (optional)"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm"
+          />
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </li>
+    );
+  }
 
   return (
     <li className="rounded-md border border-border p-3">
@@ -82,15 +139,27 @@ function ItemRow({
           {item.notes && <p className="mt-0.5 text-sm whitespace-pre-wrap text-muted-foreground">{item.notes}</p>}
           <p className="mt-1 text-xs text-muted-foreground">
             Raised by {item.created_by_name} · {formatDate(item.created_at)}
+            {item.carried_count > 0 && (
+              <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 font-medium text-yellow-800">
+                carried over {item.carried_count}&times;
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-md border border-border bg-white px-3 py-1 text-sm font-medium hover:border-accent"
+          >
+            Edit
+          </button>
           <button
             type="button"
             onClick={() => setCapturing((c) => !c)}
             className="rounded-md border border-border bg-white px-3 py-1 text-sm font-medium hover:border-accent"
           >
-            Discussed
+            Discussed…
           </button>
           <form
             action={deleteAction.bind(null, item.id)}
@@ -121,12 +190,22 @@ function ItemRow({
             placeholder="What was decided? (optional — leave blank if there's nothing to record)"
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Both file this week's discussion with its outcome. The second
+                also raises a fresh copy for next time. */}
             <button
               type="submit"
               className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
             >
-              Mark discussed
+              Discussed &amp; done
+            </button>
+            <button
+              type="submit"
+              formAction={carryAction}
+              title="Files this week's discussion and raises the same item again for next week"
+              className="rounded-md border border-accent px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent hover:text-white"
+            >
+              Discussed &amp; recurring
             </button>
             <button
               type="button"
@@ -146,12 +225,18 @@ export function CheckinBoard({
   groups,
   addAction,
   tickAction,
+  carryAction,
+  unCarryAction,
+  editAction,
   untickAction,
   deleteAction,
 }: {
   groups: BoardGroup[];
   addAction: (formData: FormData) => Promise<void>;
   tickAction: (formData: FormData) => Promise<void>;
+  carryAction: (formData: FormData) => Promise<void>;
+  unCarryAction: (id: string) => Promise<void>;
+  editAction: (formData: FormData) => Promise<void>;
   untickAction: (id: string) => Promise<void>;
   deleteAction: (id: string) => Promise<void>;
 }) {
@@ -186,11 +271,41 @@ export function CheckinBoard({
               {g.open.length > 0 ? (
                 <ul className="flex flex-col gap-2">
                   {g.open.map((item) => (
-                    <ItemRow key={item.id} item={item} tickAction={tickAction} deleteAction={deleteAction} />
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      tickAction={tickAction}
+                      carryAction={carryAction}
+                      editAction={editAction}
+                      deleteAction={deleteAction}
+                    />
                   ))}
                 </ul>
               ) : (
                 <p className="text-sm text-muted-foreground">Nothing to discuss here yet.</p>
+              )}
+
+              {/* Named rather than silently absent, so nobody wonders where an
+                  item went mid-meeting — with a way to pull it back. */}
+              {g.carried.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-1">
+                  {g.carried.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground"
+                    >
+                      <span>
+                        <span className="font-medium">{item.title}</span> — raised again for next
+                        week, back on the agenda tomorrow
+                      </span>
+                      <form action={unCarryAction.bind(null, item.id)}>
+                        <button type="submit" className="font-medium text-accent hover:underline">
+                          Bring back now
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
               )}
 
               <AddItemForm groupId={g.id} action={addAction} />

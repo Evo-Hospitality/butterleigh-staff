@@ -2,14 +2,18 @@ import Link from "next/link";
 import { requireCheckinsAccess } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildCheckinSummary, type SummaryLink } from "@/lib/checkins/summary";
+import { partitionAgenda } from "@/lib/checkins/agenda";
 import type { CheckinGroup, CheckinItem } from "@/lib/types";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { CheckinBoard, type BoardGroup } from "@/components/checkin-board";
 import {
   addCheckinItemAction,
   deleteCheckinItemAction,
+  editCheckinItemAction,
   markDiscussedAction,
+  markDiscussedRecurringAction,
   reopenCheckinItemAction,
+  unCarryCheckinItemAction,
 } from "./actions";
 
 const PHOTO_DAY_PRESETS = [7, 14, 30];
@@ -52,18 +56,9 @@ export default async function CheckinsPage({
     supabase.from("checkin_items").select("*").order("created_at").returns<CheckinItem[]>(),
   ]);
 
-  const boardGroups: BoardGroup[] = (groups ?? []).map((g) => {
-    const mine = (items ?? []).filter((i) => i.group_id === g.id);
-    return {
-      id: g.id,
-      name: g.name,
-      open: mine.filter((i) => !i.discussed),
-      // Most recently discussed first — that's what you'd look back at.
-      discussed: mine
-        .filter((i) => i.discussed)
-        .sort((a, b) => (b.discussed_at ?? "").localeCompare(a.discussed_at ?? "")),
-    };
-  });
+  // "Carried to next week" parks an item until UK midnight; anything whose
+  // deferral has since passed is simply open again.
+  const boardGroups: BoardGroup[] = partitionAgenda(groups ?? [], items ?? []);
 
   const sections: { key: keyof typeof summary; title: string; empty: string }[] = [
     { key: "actions", title: "Open actions", empty: "Nothing open." },
@@ -125,6 +120,9 @@ export default async function CheckinsPage({
         groups={boardGroups}
         addAction={addCheckinItemAction}
         tickAction={markDiscussedAction}
+        carryAction={markDiscussedRecurringAction}
+        unCarryAction={unCarryCheckinItemAction}
+        editAction={editCheckinItemAction}
         untickAction={reopenCheckinItemAction}
         deleteAction={deleteCheckinItemAction}
       />
