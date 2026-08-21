@@ -73,18 +73,25 @@ export default async function PayrollReportPage({
               <tr key={row.staffId} className="border-t border-border">
                 <td className="px-4 py-2 whitespace-nowrap">{row.fullName}</td>
                 <td className="px-4 py-2 capitalize">{row.employmentType}</td>
-                <td className="px-4 py-2">{row.hoursWorkedThisMonth ?? "—"}</td>
-                <td className="px-4 py-2">{row.accruedThisMonth?.toFixed(2) ?? "—"}</td>
-                {/* Blank rather than "0 hours" — this is the column that
-                    actually needs actioning, so anything non-zero should
-                    jump out of a page of otherwise empty cells. */}
+                {/* Every "this month" column blanks when there's nothing to
+                    act on — including where a column doesn't apply to that
+                    employment type at all. A page of empty cells means the
+                    few with figures in are the ones to deal with. */}
+                <td className="px-4 py-2">{row.hoursWorkedThisMonth ? row.hoursWorkedThisMonth : ""}</td>
+                <td className="px-4 py-2">{row.accruedThisMonth ? row.accruedThisMonth.toFixed(2) : ""}</td>
                 <td className="px-4 py-2 font-medium">
                   {row.holidayTakenThisMonth > 0 ? `${row.holidayTakenThisMonth} ${row.unit}` : ""}
                 </td>
                 <td className="px-4 py-2">
-                  {row.employmentType === "salaried" ? `${row.unpaidLeaveThisMonth} days` : "—"}
+                  {row.employmentType === "salaried" && row.unpaidLeaveThisMonth > 0
+                    ? `${row.unpaidLeaveThisMonth} days`
+                    : ""}
                 </td>
-                <td className="px-4 py-2">{row.employmentType === "salaried" ? row.lieuEarnedThisMonth : "—"}</td>
+                <td className="px-4 py-2">
+                  {row.employmentType === "salaried" && row.lieuEarnedThisMonth > 0
+                    ? row.lieuEarnedThisMonth
+                    : ""}
+                </td>
                 <td className="px-4 py-2 font-medium">
                   {row.remainingBalance.toFixed(2)} {row.unit}
                 </td>

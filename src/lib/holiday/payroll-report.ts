@@ -137,16 +137,24 @@ export function payrollReportToCsv(rows: PayrollReportRow[], year: number, month
 
   const lines = [header.join(",")];
 
+  // Empty cell rather than 0, matching the on-screen report — a nil month
+  // shouldn't look like a figure that's been checked and come to zero.
+  // Spreadsheets still SUM() a blank as nothing, so totals are unaffected.
+  const blankIfZero = (n: number | null | undefined, decimals?: number) => {
+    if (!n) return "";
+    return decimals === undefined ? String(n) : n.toFixed(decimals);
+  };
+
   for (const row of rows) {
     lines.push(
       [
         `"${row.fullName.replace(/"/g, '""')}"`,
         row.employmentType,
-        row.hoursWorkedThisMonth ?? "",
-        row.accruedThisMonth?.toFixed(2) ?? "",
-        row.holidayTakenThisMonth,
-        row.unpaidLeaveThisMonth,
-        row.lieuEarnedThisMonth,
+        blankIfZero(row.hoursWorkedThisMonth),
+        blankIfZero(row.accruedThisMonth, 2),
+        blankIfZero(row.holidayTakenThisMonth),
+        blankIfZero(row.unpaidLeaveThisMonth),
+        blankIfZero(row.lieuEarnedThisMonth),
         row.remainingBalance.toFixed(2),
         row.unit,
       ].join(","),
