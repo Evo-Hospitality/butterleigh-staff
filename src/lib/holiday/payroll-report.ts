@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LeaveBalance, LeaveRequest, LieuRequest, MonthlyHoursEntry, Profile } from "@/lib/types";
+import { remainingBalance } from "./balance";
 
 export type PayrollReportRow = {
   staffId: string;
@@ -100,12 +101,7 @@ export async function buildPayrollReport(
       (r) => r.staff_id === person.id && inMonth(r.work_date, year, month),
     ).length;
 
-    const remainingBalance = isSalaried
-      ? (balance?.brought_forward ?? 0) +
-        (balance?.base_allowance ?? person.annual_allowance_days ?? 0) +
-        (balance?.lieu_days_earned ?? 0) -
-        (balance?.used_days ?? 0)
-      : (balance?.brought_forward ?? 0) + (balance?.accrued_hours ?? 0) - (balance?.used_hours ?? 0);
+    const remaining = remainingBalance(person, balance, year);
 
     return {
       staffId: person.id,
@@ -116,7 +112,7 @@ export async function buildPayrollReport(
       holidayTakenThisMonth,
       unpaidLeaveThisMonth: isSalaried ? unpaidLeaveThisMonth : 0,
       lieuEarnedThisMonth: isSalaried ? lieuEarnedThisMonth : 0,
-      remainingBalance,
+      remainingBalance: remaining,
       unit: isSalaried ? "days" : "hours",
     };
   });

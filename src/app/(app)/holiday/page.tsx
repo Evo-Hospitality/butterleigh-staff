@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { LeaveBalance, LeaveRequest, LieuRequest } from "@/lib/types";
+import { remainingBalance as remainingBalanceFor } from "@/lib/holiday/balance";
 import { cancelLeaveRequest, cancelLieuRequest } from "./actions";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -55,11 +56,7 @@ export default async function HolidayPage() {
     )
     .reduce((sum, r) => sum + Number(r.amount), 0);
 
-  const remaining =
-    (isSalaried
-      ? (balance?.brought_forward ?? 0) + (balance?.base_allowance ?? profile.annual_allowance_days ?? 0) +
-        (balance?.lieu_days_earned ?? 0) - (balance?.used_days ?? 0)
-      : (balance?.brought_forward ?? 0) + (balance?.accrued_hours ?? 0) - (balance?.used_hours ?? 0)) - pendingAmount;
+  const remaining = remainingBalanceFor(profile, balance, year) - pendingAmount;
 
   const unit = isSalaried ? "days" : "hours";
 

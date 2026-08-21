@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import type { Profile, LeaveBalance } from "@/lib/types";
-import { proratedAllowance } from "@/lib/holiday/proration";
+import { effectiveAllowance, remainingBalance } from "@/lib/holiday/balance";
 import { saveBalances } from "./actions";
 
 export default async function BalancesPage({
@@ -41,7 +42,7 @@ export default async function BalancesPage({
         </p>
       </div>
 
-      <div className="mb-4 flex gap-3 text-sm">
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         {[year - 1, year, year + 1].map((y) => (
           <a
             key={y}
@@ -53,6 +54,12 @@ export default async function BalancesPage({
             {y}
           </a>
         ))}
+        <Link
+          href={`/admin/balances/rollover?from=${year}`}
+          className="ml-auto rounded-md border border-accent px-3 py-1.5 font-semibold text-accent hover:bg-accent hover:text-white"
+        >
+          Roll {year} into {year + 1} &rarr;
+        </Link>
       </div>
 
       <form action={saveBalances}>
@@ -79,18 +86,12 @@ export default async function BalancesPage({
                 const bal = balanceByStaff.get(person.id);
                 const isSalaried = person.employment_type === "salaried";
                 const broughtForward = bal?.brought_forward ?? 0;
-                const baseAllowance =
-                  bal?.base_allowance ??
-                  (person.annual_allowance_days
-                    ? proratedAllowance(person.annual_allowance_days, person.start_date, year)
-                    : 0);
+                const baseAllowance = effectiveAllowance(person, bal, year);
                 const lieu = bal?.lieu_days_earned ?? 0;
                 const accruedHours = bal?.accrued_hours ?? 0;
                 const usedDays = bal?.used_days ?? 0;
                 const usedHours = bal?.used_hours ?? 0;
-                const remaining = isSalaried
-                  ? broughtForward + baseAllowance + lieu - usedDays
-                  : broughtForward + accruedHours - usedHours;
+                const remaining = remainingBalance(person, bal, year);
 
                 return (
                   <tr key={person.id} className="border-t border-border">
