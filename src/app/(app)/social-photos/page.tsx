@@ -47,6 +47,23 @@ export default async function SocialPhotosPage({
         </Link>
       </div>
 
+      {/* The incentive is the whole point of the app — say it before the feed,
+          not buried under it, and be straight about who it applies to. */}
+      <div className="mb-6 max-w-2xl rounded-lg border border-accent bg-accent/5 p-4">
+        <p className="mb-1 font-semibold text-primary">
+          £1 for every photo of yours we use on socials
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Snap anything that shows the place off — the food, the bar, the garden, a busy night, the
+          dog by the fire. Upload as many as you like. Anything we post gets marked here, and
+          you&apos;ll see the tick against your photo.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Paid to hourly staff through payroll, in the month the photo is marked as used. Salaried
+          staff are very welcome to submit photos, but the £1 doesn&apos;t apply.
+        </p>
+      </div>
+
       {error && (
         <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
