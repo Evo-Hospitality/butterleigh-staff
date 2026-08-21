@@ -58,7 +58,7 @@ function ActionTable({
 }
 
 export default async function ActionsPage() {
-  const { supabase } = await requireActionItemsAccess();
+  const { supabase, user } = await requireActionItemsAccess();
 
   // RLS already scopes this to Actions where the caller is the submitter,
   // the assignee, or an admin — no further filtering needed here.
@@ -70,6 +70,9 @@ export default async function ActionsPage() {
 
   const open = (items ?? []).filter((a) => a.status === "open");
   const closed = (items ?? []).filter((a) => a.status === "closed");
+  // Your own open Actions, pulled to the top. They stay in the full Open
+  // list below too — this is a shortcut to what you owe, not a filter.
+  const mine = open.filter((a) => a.assigned_to === user.id);
 
   const openIds = open.map((a) => a.id);
   const latestUpdates = new Map<string, ActionItemUpdateEntry>();
@@ -98,6 +101,20 @@ export default async function ActionsPage() {
           Raise an Action
         </Link>
       </div>
+
+      {mine.length > 0 && (
+        <>
+          <h2 className="mb-3 text-lg font-bold text-primary">
+            Open actions for me{" "}
+            <span className="rounded-full bg-accent px-2 py-0.5 align-middle text-xs font-semibold text-white">
+              {mine.length}
+            </span>
+          </h2>
+          <div className="mb-8">
+            <ActionTable items={mine} empty="Nothing assigned to you." latestUpdates={latestUpdates} />
+          </div>
+        </>
+      )}
 
       <h2 className="mb-3 text-lg font-bold text-primary">Open</h2>
       <div className="mb-8">
