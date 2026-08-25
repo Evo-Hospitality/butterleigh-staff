@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { normaliseName, parseTimeEntries } from "@/lib/holiday/parse-time-entries";
 import type { Profile } from "@/lib/types";
+import { formatName } from "@/lib/name-case";
 
 // How a single name in the file will be treated if committed as-is.
 export type PreviewStatus = "post" | "salaried" | "unmatched";
@@ -231,7 +232,9 @@ export async function linkUnmatchedAction(unmatchedId: string, profileId: string
     throw new Error("Could not find that staff member.");
   }
 
-  await supabase.from("profiles").update({ full_name: row.display_name }).eq("id", profileId);
+  // The import is the definitive source for how a name is spelled, but it
+  // still gets cased consistently — the CSV writes some in block capitals.
+  await supabase.from("profiles").update({ full_name: formatName(row.display_name) }).eq("id", profileId);
 
   if (target.employment_type !== "salaried") {
     const { year, month } = row.hours_imports;

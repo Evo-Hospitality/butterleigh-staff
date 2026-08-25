@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatName } from "@/lib/name-case";
 import type { EmploymentType } from "@/lib/types";
 
 export type CreateStaffInput = {
@@ -28,7 +29,7 @@ export async function createStaff(input: CreateStaffInput) {
     email: input.email,
     email_confirm: true,
     user_metadata: {
-      full_name: input.fullName,
+      full_name: formatName(input.fullName),
       role: input.role,
       employment_type: input.employmentType,
       working_days: input.workingDays,

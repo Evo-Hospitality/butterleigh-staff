@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Profile } from "@/lib/types";
 import { proratedAllowance } from "@/lib/holiday/proration";
 import { formatDate } from "@/lib/format";
+import { NameInput } from "@/components/name-input";
 import {
   updateStaffAction,
   deleteStaffAction,
@@ -166,12 +167,7 @@ export function EditStaffForm({
     <form action={action} className="flex max-w-lg flex-col gap-4">
       <div>
         <label className="mb-1 block text-sm font-medium">Full name</label>
-        <input
-          name="full_name"
-          required
-          defaultValue={staff.full_name}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm"
-        />
+        <NameInput name="full_name" defaultValue={staff.full_name} />
       </div>
 
       <p className="text-sm text-muted-foreground">{staff.email}</p>

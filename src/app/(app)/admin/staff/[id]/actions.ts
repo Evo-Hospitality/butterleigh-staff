@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { deleteStaff, sendStaffInvite, setTemporaryPassword, updateStaffEmail } from "@/lib/holiday/staff";
+import { formatName } from "@/lib/name-case";
 import { startImpersonation } from "@/lib/impersonation";
 
 function fail(staffId: string, message: string): never {
@@ -24,7 +25,7 @@ export async function updateStaffAction(staffId: string, formData: FormData) {
   const { error } = await supabase
     .from("profiles")
     .update({
-      full_name: String(formData.get("full_name")),
+      full_name: formatName(String(formData.get("full_name"))),
       role: String(formData.get("role")),
       employment_type: employmentType,
       working_days: workingDays,
