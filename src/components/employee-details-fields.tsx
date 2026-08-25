@@ -1,4 +1,5 @@
 import type { EmployeeDetails } from "@/lib/types";
+import { SortCodeInput } from "./sort-code-input";
 
 function Field({
   label,
@@ -99,12 +100,11 @@ export function BankFields({ details }: { details: EmployeeDetails | null }) {
   return (
     <div className="flex flex-col gap-4">
       <Field label="Bank name" name="bank_name" defaultValue={details?.bank_name} />
-      <Field
-        label="Sort code"
-        name="bank_sort_code"
-        defaultValue={details?.bank_sort_code}
-        hint="Six digits, e.g. 12-34-56"
-      />
+      <div>
+        <label className="mb-1 block text-sm font-medium">Sort code</label>
+        <p className="mb-1 text-xs text-muted-foreground">Six digits, e.g. 12-34-56</p>
+        <SortCodeInput defaultValue={details?.bank_sort_code} />
+      </div>
       <Field
         label="Account number"
         name="bank_account_number"

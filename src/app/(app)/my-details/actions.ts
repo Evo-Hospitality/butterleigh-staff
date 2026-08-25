@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { updateStaffEmail } from "@/lib/holiday/staff";
 import { bankDetailsChanged, readBankFields } from "@/lib/onboarding/details";
+import { isCompleteSortCode } from "@/lib/sort-code";
 import { notifyBankChangeRequested } from "@/lib/onboarding/notifications";
 import type { EmployeeDetails } from "@/lib/types";
 
@@ -75,6 +76,9 @@ export async function requestBankChangeAction(formData: FormData) {
   const bank = readBankFields(formData);
   if (!bank.bank_name || !bank.bank_sort_code || !bank.bank_account_number) {
     fail("All three bank fields are needed.");
+  }
+  if (!isCompleteSortCode(bank.bank_sort_code)) {
+    fail("A sort code is six digits, like 12-34-56.");
   }
 
   const { data: details } = await supabase

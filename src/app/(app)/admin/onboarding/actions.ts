@@ -13,6 +13,7 @@ import {
 } from "@/lib/onboarding/details";
 import { notifyBankChangeDecided, notifyOnboardingDecided } from "@/lib/onboarding/notifications";
 import type { BankChangeRequest, EmployeeDocument } from "@/lib/types";
+import { isCompleteSortCode } from "@/lib/sort-code";
 
 function fail(staffId: string, message: string): never {
   redirect(`/admin/onboarding/${staffId}?error=${encodeURIComponent(message)}`);
@@ -30,6 +31,12 @@ export async function saveEmployeeDetailsAction(formData: FormData) {
 
   const fields = readDetailFields(formData);
   const bank = readBankFields(formData);
+
+  // A half-filled record is expected here while migrating someone across, so
+  // an empty sort code is fine — a wrong one isn't.
+  if (bank.bank_sort_code && !isCompleteSortCode(bank.bank_sort_code)) {
+    fail(staffId, "A sort code is six digits, like 12-34-56.");
+  }
 
   const { data: existing } = await supabase
     .from("employee_details")

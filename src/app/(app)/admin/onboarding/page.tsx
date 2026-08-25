@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
+import { formatSortCode } from "@/lib/sort-code";
 import type { BankChangeRequest, EmployeeDetails, Profile } from "@/lib/types";
 import { decideBankChangeAction } from "./actions";
 
@@ -112,14 +113,16 @@ export default async function AdminOnboardingPage({
                   <div>
                     <dt className="text-xs text-muted-foreground">Currently</dt>
                     <dd>
-                      {request.previous_bank_name ?? "—"} · {request.previous_bank_sort_code ?? "—"} ·{" "}
+                      {request.previous_bank_name ?? "—"} ·{" "}
+                      {formatSortCode(request.previous_bank_sort_code) || "—"} ·{" "}
                       {request.previous_bank_account_number ?? "—"}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">Requested</dt>
                     <dd className="font-medium">
-                      {request.bank_name} · {request.bank_sort_code} · {request.bank_account_number}
+                      {request.bank_name} · {formatSortCode(request.bank_sort_code)} ·{" "}
+                      {request.bank_account_number}
                     </dd>
                   </div>
                 </dl>

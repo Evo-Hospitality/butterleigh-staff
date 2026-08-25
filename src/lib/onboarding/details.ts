@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { EmployeeDocument } from "@/lib/types";
+import { formatSortCode } from "@/lib/sort-code";
 
 // Reading these fields out of a form, in one place, so the onboarding form
 // and the later "my details" edits can't drift apart on trimming or which
@@ -73,7 +74,9 @@ export type BankFields = {
 export function readBankFields(formData: FormData): BankFields {
   return {
     bank_name: String(formData.get("bank_name") ?? "").trim(),
-    bank_sort_code: String(formData.get("bank_sort_code") ?? "").trim(),
+    // Normalised here rather than trusted from the form, so a paste that
+    // dodges the input's own formatting still lands as 12-34-56.
+    bank_sort_code: formatSortCode(String(formData.get("bank_sort_code") ?? "")),
     bank_account_number: String(formData.get("bank_account_number") ?? "").trim(),
   };
 }

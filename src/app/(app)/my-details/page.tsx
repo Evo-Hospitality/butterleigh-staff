@@ -2,6 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { documentsWithUrls } from "@/lib/onboarding/details";
+import { SortCodeInput } from "@/components/sort-code-input";
+import { formatSortCode } from "@/lib/sort-code";
 import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
 
@@ -193,7 +195,7 @@ export default async function MyDetailsPage({
 
         <div className="mb-4 max-w-xl rounded-lg border border-border bg-muted p-5">
           <Row label="Bank" value={details?.bank_name ?? null} />
-          <Row label="Sort code" value={details?.bank_sort_code ?? null} />
+          <Row label="Sort code" value={formatSortCode(details?.bank_sort_code) || null} />
           <Row label="Account number" value={details?.bank_account_number ?? null} />
         </div>
 
@@ -201,19 +203,19 @@ export default async function MyDetailsPage({
           <div className="max-w-xl rounded-md bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
             <p className="mb-1 font-semibold">A change is waiting to be approved</p>
             <p>
-              {pendingBank.bank_name} · {pendingBank.bank_sort_code} · {pendingBank.bank_account_number}
+              {pendingBank.bank_name} · {formatSortCode(pendingBank.bank_sort_code)} ·{" "}
+              {pendingBank.bank_account_number}
             </p>
             <p className="mt-1 text-xs">Requested {formatDateTime(pendingBank.requested_at)}.</p>
           </div>
         ) : (
           <form action={requestBankChangeAction} className="flex max-w-xl flex-col gap-4">
             <Field label="Bank name" name="bank_name" defaultValue={details?.bank_name} />
-            <Field
-              label="Sort code"
-              name="bank_sort_code"
-              defaultValue={details?.bank_sort_code}
-              hint="Six digits, e.g. 12-34-56"
-            />
+            <div>
+              <label className="mb-1 block text-sm font-medium">Sort code</label>
+              <p className="mb-1 text-xs text-muted-foreground">Six digits, e.g. 12-34-56</p>
+              <SortCodeInput defaultValue={details?.bank_sort_code} />
+            </div>
             <Field
               label="Account number"
               name="bank_account_number"
