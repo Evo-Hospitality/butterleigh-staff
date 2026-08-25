@@ -100,7 +100,7 @@ export default async function OnboardingPage({
           <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
             Fill in the{" "}
             <a
-              href="https://www.tax.service.gov.uk/register-employee/employment-details"
+              href="https://www.gov.uk/guidance/starter-checklist-for-paye"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-accent underline"
