@@ -7,7 +7,7 @@ import { adminDocumentPrefix, documentTypeNames, documentsWithUrls } from "@/lib
 import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
 import { DocumentTypeSelect } from "@/components/document-type-select";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
-import { SortCodeInput } from "@/components/sort-code-input";
+import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
 import {
   approveOnboardingAction,
@@ -306,7 +306,10 @@ export default async function AdminEmployeeDetailsPage({
             <label className="mb-1 block text-sm font-medium">Sort code</label>
             <SortCodeInput defaultValue={details?.bank_sort_code} required={false} />
           </div>
-          <Field label="Account number" name="bank_account_number" defaultValue={details?.bank_account_number} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Account number</label>
+            <AccountNumberInput defaultValue={details?.bank_account_number} required={false} />
+          </div>
 
           <SubmitButton pendingLabel="Saving…">Save details</SubmitButton>
         </form>

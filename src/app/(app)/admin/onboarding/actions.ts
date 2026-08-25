@@ -13,7 +13,7 @@ import {
 } from "@/lib/onboarding/details";
 import { notifyBankChangeDecided, notifyOnboardingDecided } from "@/lib/onboarding/notifications";
 import type { BankChangeRequest, EmployeeDocument } from "@/lib/types";
-import { isCompleteSortCode } from "@/lib/sort-code";
+import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
 
 function fail(staffId: string, message: string): never {
   redirect(`/admin/onboarding/${staffId}?error=${encodeURIComponent(message)}`);
@@ -36,6 +36,9 @@ export async function saveEmployeeDetailsAction(formData: FormData) {
   // an empty sort code is fine — a wrong one isn't.
   if (bank.bank_sort_code && !isCompleteSortCode(bank.bank_sort_code)) {
     fail(staffId, "A sort code is six digits, like 12-34-56.");
+  }
+  if (bank.bank_account_number && !isCompleteAccountNumber(bank.bank_account_number)) {
+    fail(staffId, "An account number is eight digits.");
   }
 
   const { data: existing } = await supabase

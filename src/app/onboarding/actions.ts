@@ -14,7 +14,7 @@ import {
 import { notifyOnboardingSubmitted } from "@/lib/onboarding/notifications";
 import type { BankFields, DetailFields } from "@/lib/onboarding/details";
 import { updateStaffEmail } from "@/lib/holiday/staff";
-import { isCompleteSortCode } from "@/lib/sort-code";
+import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
 import type { EmployeeDetails } from "@/lib/types";
 
 function fail(message: string): never {
@@ -102,6 +102,9 @@ export async function submitOnboardingAction(formData: FormData) {
   }
   if (!isCompleteSortCode(bank.bank_sort_code)) {
     fail("A sort code is six digits, like 12-34-56.");
+  }
+  if (!isCompleteAccountNumber(bank.bank_account_number)) {
+    fail("An account number is eight digits — include the leading zero if yours has one.");
   }
 
   const { data: existing } = await supabase

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { updateStaffEmail } from "@/lib/holiday/staff";
 import { bankDetailsChanged, readBankFields } from "@/lib/onboarding/details";
-import { isCompleteSortCode } from "@/lib/sort-code";
+import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
 import { notifyBankChangeRequested } from "@/lib/onboarding/notifications";
 import type { EmployeeDetails } from "@/lib/types";
 
@@ -79,6 +79,9 @@ export async function requestBankChangeAction(formData: FormData) {
   }
   if (!isCompleteSortCode(bank.bank_sort_code)) {
     fail("A sort code is six digits, like 12-34-56.");
+  }
+  if (!isCompleteAccountNumber(bank.bank_account_number)) {
+    fail("An account number is eight digits — include the leading zero if yours has one.");
   }
 
   const { data: details } = await supabase

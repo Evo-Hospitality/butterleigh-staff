@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
-import { formatSortCode } from "@/lib/sort-code";
+import { formatSortCode } from "@/lib/bank-details";
 import type { BankChangeRequest, EmployeeDetails, Profile } from "@/lib/types";
 import { decideBankChangeAction } from "./actions";
 

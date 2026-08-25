@@ -20,3 +20,15 @@ export function formatSortCode(value: string | null | undefined): string {
 export function isCompleteSortCode(value: string | null | undefined): boolean {
   return sortCodeDigits(value).length === 6;
 }
+
+// UK account numbers are eight digits and often start with a zero, so they
+// are only ever text — never a number. Parsing one would silently turn
+// 03666174 into 3666174 and send someone's wages to an account that doesn't
+// exist.
+export function accountNumberDigits(value: string | null | undefined): string {
+  return (value ?? "").replace(/\D/g, "").slice(0, 8);
+}
+
+export function isCompleteAccountNumber(value: string | null | undefined): boolean {
+  return accountNumberDigits(value).length === 8;
+}

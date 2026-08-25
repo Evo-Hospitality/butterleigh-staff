@@ -2,8 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { documentsWithUrls } from "@/lib/onboarding/details";
-import { SortCodeInput } from "@/components/sort-code-input";
-import { formatSortCode } from "@/lib/sort-code";
+import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
+import { formatSortCode } from "@/lib/bank-details";
 import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
 
@@ -216,12 +216,13 @@ export default async function MyDetailsPage({
               <p className="mb-1 text-xs text-muted-foreground">Six digits, e.g. 12-34-56</p>
               <SortCodeInput defaultValue={details?.bank_sort_code} />
             </div>
-            <Field
-              label="Account number"
-              name="bank_account_number"
-              defaultValue={details?.bank_account_number}
-              hint="Eight digits"
-            />
+            <div>
+              <label className="mb-1 block text-sm font-medium">Account number</label>
+              <p className="mb-1 text-xs text-muted-foreground">
+                Eight digits — include the leading zero if yours has one
+              </p>
+              <AccountNumberInput defaultValue={details?.bank_account_number} />
+            </div>
             <SubmitButton pendingLabel="Sending…">Request bank change</SubmitButton>
           </form>
         )}
