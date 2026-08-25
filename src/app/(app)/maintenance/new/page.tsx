@@ -1,5 +1,6 @@
 import { requireMaintenanceAccess } from "@/lib/auth";
-import { canBeAssignedMaintenance, type Profile } from "@/lib/types";
+import type { Profile } from "@/lib/types";
+import { staffWithAppAccess } from "@/lib/access-query";
 import { SubmitButton } from "@/components/submit-button";
 import { createMaintenanceRequestAction } from "./actions";
 
@@ -19,7 +20,7 @@ export default async function NewMaintenanceRequestPage({
       .eq("active", true)
       .order("full_name")
       .returns<Profile[]>();
-    assignees = (data ?? []).filter(canBeAssignedMaintenance);
+    assignees = await staffWithAppAccess(supabase, "maintenance", "manage");
   }
 
   return (

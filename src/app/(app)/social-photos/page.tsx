@@ -11,7 +11,7 @@ export default async function SocialPhotosPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const { supabase, profile } = await requireUser();
+  const { supabase, profile, access } = await requireUser();
   const { error } = await searchParams;
 
   const [{ data: posts }, { data: photos }, { data: settings }] = await Promise.all([
@@ -24,11 +24,9 @@ export default async function SocialPhotosPage({
     supabase.from("settings").select("social_photos_reviewer_id").single(),
   ]);
 
-  // Open select policy on settings means any authenticated user can read
-  // who the reviewer is, so this comparison is safe to do client-side of
-  // the request (i.e. here, in the Server Component) without an admin
-  // client — real enforcement is inside set_photo_used() regardless.
-  const canMark = profile.role === "admin" || settings?.social_photos_reviewer_id === profile.id;
+  // Manage on Social photos, same as every other app. Real enforcement is
+  // inside set_photo_used() regardless.
+  const canMark = access("social_photos", "manage");
 
   const photosByPost = new Map<string, SocialPhoto[]>();
   for (const photo of photos ?? []) {
@@ -65,7 +63,7 @@ export default async function SocialPhotosPage({
                 <p className="text-sm text-muted-foreground">
                   {post.submitted_by_name} · {formatDateTime(post.created_at)}
                 </p>
-                {profile.role === "admin" && <DeleteSocialPhotoPostButton action={deleteAction} />}
+                {canMark && <DeleteSocialPhotoPostButton action={deleteAction} />}
               </div>
               {post.caption && <p className="mb-3 text-sm">{post.caption}</p>}
               <div className="flex flex-wrap gap-3">

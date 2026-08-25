@@ -160,10 +160,10 @@ export function StaffForm({ managers }: { managers: Profile[] }) {
         </select>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="has_maintenance_access" defaultChecked />
-        Has access to the Maintenance app
-      </label>
+      <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+        Which apps they can open is set on the <strong>App access</strong> tab. New staff start
+        with the everyday apps and nothing else.
+      </p>
 
       <button
         type="submit"

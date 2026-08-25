@@ -1,12 +1,34 @@
 import Link from "next/link";
-import { canAccessMaintenance as canAccessMaintenanceCheck, type Profile } from "@/lib/types";
+import type { Profile } from "@/lib/types";
+import type { AppKey } from "@/lib/access";
 import { signOut } from "@/app/(app)/actions";
 import { Logo } from "./logo";
 
-export function Nav({ profile }: { profile: Profile }) {
-  const canApprove = profile.is_manager || profile.role === "admin";
-  const canAccessMaintenance = canAccessMaintenanceCheck(profile);
+// Order matters: Overview first for anyone who has it, since it's the way
+// in to everything else. Which links appear comes from the same per-app
+// access as the tiles and the pages themselves (0038) — no role guessing.
+const LINKS: { href: string; label: string; app: AppKey; level?: "use" | "manage" }[] = [
+  { href: "/checkins", label: "Overview", app: "overview" },
+  { href: "/tasks", label: "Tasks", app: "tasks" },
+  { href: "/holiday", label: "Holiday", app: "holiday" },
+  { href: "/social-photos", label: "Photos", app: "social_photos" },
+  { href: "/events", label: "Events", app: "events" },
+  { href: "/maintenance", label: "Maintenance", app: "maintenance" },
+  { href: "/sops", label: "SOPs", app: "sops" },
+  { href: "/actions", label: "Actions", app: "actions" },
+  { href: "/stocktake", label: "Stocktake", app: "stocktake" },
+  // Approving is the Manage half of Holiday, so it appears only for the
+  // people who actually do it.
+  { href: "/holiday/approvals", label: "Approvals", app: "holiday", level: "manage" },
+];
 
+export function Nav({
+  profile,
+  canSee,
+}: {
+  profile: Profile;
+  canSee: (app: AppKey, level?: "use" | "manage") => boolean;
+}) {
   return (
     <header className="border-b border-border bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:py-6">
@@ -15,46 +37,11 @@ export function Nav({ profile }: { profile: Profile }) {
           Butterleigh Inn
         </Link>
         <nav className="flex flex-wrap items-center gap-3 text-sm sm:gap-6 sm:text-[1.75rem]">
-          {/* First for managers and admins — it's the way in to everything
-              else. Hidden for everyone else, so their menu starts at Tasks. */}
-          {canApprove && (
-            <Link href="/checkins" className="hover:text-accent">
-              Overview
+          {LINKS.filter((link) => canSee(link.app, link.level)).map((link) => (
+            <Link key={link.href} href={link.href} className="hover:text-accent">
+              {link.label}
             </Link>
-          )}
-          <Link href="/tasks" className="hover:text-accent">
-            Tasks
-          </Link>
-          <Link href="/holiday" className="hover:text-accent">
-            Holiday
-          </Link>
-          <Link href="/social-photos" className="hover:text-accent">
-            Photos
-          </Link>
-          <Link href="/events" className="hover:text-accent">
-            Events
-          </Link>
-          {canAccessMaintenance && (
-            <Link href="/maintenance" className="hover:text-accent">
-              Maintenance
-            </Link>
-          )}
-          <Link href="/sops" className="hover:text-accent">
-            SOPs
-          </Link>
-          {canApprove && (
-            <Link href="/actions" className="hover:text-accent">
-              Actions
-            </Link>
-          )}
-          <Link href="/stocktake" className="hover:text-accent">
-            Stocktake
-          </Link>
-          {canApprove && (
-            <Link href="/holiday/approvals" className="hover:text-accent">
-              Approvals
-            </Link>
-          )}
+          ))}
           {profile.role === "admin" && (
             <Link href="/admin/staff" className="hover:text-accent">
               Admin

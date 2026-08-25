@@ -15,7 +15,6 @@ export type CreateStaffInput = {
   annualAllowanceDays: number | null;
   managerId: string | null;
   isManager: boolean;
-  hasMaintenanceAccess: boolean;
 };
 
 // Creates the auth user (and, via the handle_new_user() trigger in
@@ -37,7 +36,6 @@ export async function createStaff(input: CreateStaffInput) {
       annual_allowance_days: input.annualAllowanceDays,
       manager_id: input.managerId,
       is_manager: input.isManager,
-      has_maintenance_access: input.hasMaintenanceAccess,
     },
   });
 

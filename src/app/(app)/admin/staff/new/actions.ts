@@ -16,7 +16,6 @@ export async function createStaffAction(formData: FormData) {
   const sendInviteNow = formData.get("send_invite_now") === "on";
   const startDate = formData.get("start_date");
 
-  const hasMaintenanceAccess = formData.get("has_maintenance_access") === "on";
 
   const user = await createStaff({
     email,
@@ -28,18 +27,15 @@ export async function createStaffAction(formData: FormData) {
     annualAllowanceDays: employmentType === "salaried" && allowance ? Number(allowance) : null,
     managerId: managerId ? String(managerId) : null,
     isManager: formData.get("is_manager") === "on",
-    hasMaintenanceAccess,
   });
 
-  // The handle_new_user() trigger doesn't read start_date or
-  // has_maintenance_access (both added after it was written), so they're
-  // set here as a follow-up update instead.
-  if (startDate || hasMaintenanceAccess) {
+  // The handle_new_user() trigger doesn't read start_date (added after it
+  // was written), so it's set here as a follow-up update instead.
+  if (startDate) {
     await supabase
       .from("profiles")
       .update({
         ...(startDate ? { start_date: String(startDate) } : {}),
-        ...(hasMaintenanceAccess ? { has_maintenance_access: true } : {}),
       })
       .eq("id", user.id);
   }

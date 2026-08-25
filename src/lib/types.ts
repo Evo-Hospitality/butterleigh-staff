@@ -92,7 +92,6 @@ export type Profile = {
   must_change_password: boolean;
   onboarding_status: OnboardingStatus;
   start_date: string | null;
-  has_maintenance_access: boolean;
   created_at: string;
 };
 
@@ -103,18 +102,12 @@ export function isManagerOrAdmin(profile: Profile): boolean {
   return profile.role === "admin" || profile.is_manager;
 }
 
-// Admins and managers have implicit access (same fallback pattern used
-// throughout — the per-person flag is what an admin opts regular staff into,
-// not a boundary admins/managers themselves are subject to).
-export function canAccessMaintenance(profile: Profile): boolean {
-  return profile.has_maintenance_access || isManagerOrAdmin(profile);
-}
 
 // Who a request can be routed TO — deliberately narrower than who can
 // access the app. Anyone with maintenance access can see the shared log,
 // but only admins/managers are the "someone should own fixing this" people
 // that raisers pick from in Assign to / Reassign to.
-export const canBeAssignedMaintenance = isManagerOrAdmin;
+
 
 export type LeaveBalance = {
   id: string;

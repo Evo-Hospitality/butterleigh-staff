@@ -293,10 +293,9 @@ export function EditStaffForm({
         Active (uncheck to archive — blocks their login but keeps all their history)
       </label>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="has_maintenance_access" defaultChecked={staff.has_maintenance_access} />
-        Has access to the Maintenance app
-      </label>
+      <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+        Which apps they can open is set on the <strong>App access</strong> tab.
+      </p>
 
       <button
         type="submit"

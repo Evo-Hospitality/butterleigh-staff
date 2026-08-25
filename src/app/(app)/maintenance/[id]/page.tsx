@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMaintenanceAccess } from "@/lib/auth";
-import { canBeAssignedMaintenance, type MaintenanceRequest, type MaintenanceUpdateEntry, type Profile } from "@/lib/types";
+import type { MaintenanceRequest, MaintenanceUpdateEntry, Profile } from "@/lib/types";
+import { staffWithAppAccess } from "@/lib/access-query";
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -62,7 +63,9 @@ export default async function MaintenanceDetailPage({
       .eq("active", true)
       .order("full_name")
       .returns<Profile[]>();
-    assignees = (data ?? []).filter((a) => canBeAssignedMaintenance(a) && a.id !== request.assigned_to);
+    assignees = (await staffWithAppAccess(supabase, "maintenance", "manage")).filter(
+      (a) => a.id !== request.assigned_to,
+    );
   }
 
   const closeAction = setStatusAction.bind(null, id, "closed");

@@ -10,80 +10,82 @@ import {
   PartyPopper,
   Wrench,
 } from "lucide-react";
-import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
+import type { AppKey } from "@/lib/access";
 
 // Add an entry here for each future mini-app. Order matters — the first
-// tile a manager or admin sees is Overview, since it's the way in to
-// everything else. It's filtered out for other staff, whose grid starts
-// at Tasks.
+// tile is Overview for anyone who has it, since it's the way in to
+// everything else.
+//
+// Which tiles appear is no longer guessed from role: each one names the app
+// it belongs to and is shown only to people granted it (0038).
 const TILES = [
   {
     href: "/checkins",
     label: "Overview",
     description: "What's in flight across the apps, and the meeting agenda",
     icon: ClipboardCheck,
-    show: isManagerOrAdmin,
+    app: "overview" as AppKey,
   },
   {
     href: "/tasks",
     label: "Tasks",
     description: "Create one-off or recurring tasks for yourself or others",
     icon: CheckSquare,
-    show: (_profile: Profile) => true,
+    app: "tasks" as AppKey,
   },
   {
     href: "/holiday",
     label: "Holiday",
     description: "Request holiday, request a day in lieu, check your balance",
     icon: CalendarDays,
-    show: (_profile: Profile) => true,
+    app: "holiday" as AppKey,
   },
   {
     href: "/social-photos",
     label: "Photos for socials",
     description: "Submit photos for the company's social media accounts",
     icon: Camera,
-    show: (_profile: Profile) => true,
+    app: "social_photos" as AppKey,
   },
   {
     href: "/events",
     label: "Event ideas",
     description: "Suggest an event and see what's been approved",
     icon: PartyPopper,
-    show: (_profile: Profile) => true,
+    app: "events" as AppKey,
   },
   {
     href: "/maintenance",
     label: "Maintenance",
     description: "Report an issue and track progress until it's fixed",
     icon: Wrench,
-    show: canAccessMaintenance,
+    app: "maintenance" as AppKey,
   },
   {
     href: "/sops",
     label: "SOPs & FAQs",
     description: "Ask a question or search how something's meant to be done",
     icon: BookOpenText,
-    show: (_profile: Profile) => true,
+    app: "sops" as AppKey,
   },
   {
     href: "/actions",
     label: "Actions",
     description: "Raise and track things assigned between managers/admins",
     icon: ClipboardList,
-    show: isManagerOrAdmin,
+    app: "actions" as AppKey,
   },
   {
     href: "/stocktake",
     label: "Stocktake",
     description: "Count wet or dry stock, valued by location",
     icon: Package,
-    show: (_profile: Profile) => true,
+    app: "stocktake" as AppKey,
   },
 ];
 
-export function DashboardTiles({ profile }: { profile: Profile }) {
-  const tiles = TILES.filter((tile) => tile.show(profile));
+export function DashboardTiles({ canSee }: { canSee: (app: AppKey) => boolean }) {
+  const tiles = TILES.filter((tile) => canSee(tile.app));
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">

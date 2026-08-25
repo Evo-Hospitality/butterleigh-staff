@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { DashboardTiles } from "@/components/shell/dashboard-tiles";
 
 export default async function DashboardPage() {
-  const { profile } = await requireUser();
+  const { profile, access } = await requireUser();
 
   return (
     <div>
@@ -10,7 +10,7 @@ export default async function DashboardPage() {
         Welcome, {profile.full_name.split(" ")[0]}
       </h1>
       <p className="mb-6 text-sm text-muted-foreground">Choose an app to get started.</p>
-      <DashboardTiles profile={profile} />
+      <DashboardTiles canSee={access} />
     </div>
   );
 }

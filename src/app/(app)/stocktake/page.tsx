@@ -6,7 +6,7 @@ import { deleteStockTakeDraftAction, deleteSubmittedStockTakeAction } from "./ac
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 
 export default async function StockTakePage() {
-  const { supabase, profile } = await requireUser();
+  const { supabase, access } = await requireUser();
 
   const [{ data: stockTakes }, { data: entries }] = await Promise.all([
     supabase.from("stock_takes").select("*").order("created_at", { ascending: false }).returns<StockTake[]>(),
@@ -114,7 +114,7 @@ export default async function StockTakePage() {
                 </td>
                 <td className="px-4 py-2">£{(valueByStockTake.get(s.id) ?? 0).toFixed(2)}</td>
                 <td className="px-4 py-2 text-right">
-                  {profile.role === "admin" && (
+                  {access("stocktake", "manage") && (
                     <ConfirmDeleteButton
                       action={deleteSubmittedStockTakeAction.bind(null, s.id)}
                       label="Delete"

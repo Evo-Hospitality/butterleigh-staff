@@ -1,20 +1,14 @@
 import { requireAdmin } from "@/lib/auth";
-import { canBeAssignedMaintenance, type Profile } from "@/lib/types";
+import { staffWithAppAccess } from "@/lib/access-query";
 import { saveMaintenanceSettingsAction } from "./actions";
 
 export default async function MaintenanceSettingsPage() {
   const { supabase } = await requireAdmin();
 
-  const [{ data: settings }, { data: allStaff }] = await Promise.all([
+  const [{ data: settings }, staff] = await Promise.all([
     supabase.from("settings").select("default_maintenance_assignee_id").single(),
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("active", true)
-      .order("full_name")
-      .returns<Profile[]>(),
+    staffWithAppAccess(supabase, "maintenance", "manage"),
   ]);
-  const staff = (allStaff ?? []).filter(canBeAssignedMaintenance);
 
   return (
     <div>

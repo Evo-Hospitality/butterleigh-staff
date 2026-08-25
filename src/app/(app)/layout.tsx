@@ -5,7 +5,7 @@ import { ImpersonationBanner } from "@/components/shell/impersonation-banner";
 import { getImpersonationState } from "@/lib/impersonation";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { profile } = await requireUser();
+  const { profile, access } = await requireUser();
   const impersonation = await getImpersonationState();
 
   // Forcing the admin through the target's own password-change flow makes
@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {impersonation && (
         <ImpersonationBanner adminName={impersonation.adminName} targetName={impersonation.targetName} />
       )}
-      <Nav profile={profile} />
+      <Nav profile={profile} canSee={access} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
     </>
   );

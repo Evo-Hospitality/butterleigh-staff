@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { isManagerOrAdmin, type SopBlock, type SopEntry } from "@/lib/types";
+import type { SopBlock, SopEntry } from "@/lib/types";
 import { SopSearch, type SopSearchEntry } from "@/components/sop-search";
 
 function snippetFor(blocks: SopBlock[]): string {
@@ -11,8 +11,8 @@ function snippetFor(blocks: SopBlock[]): string {
 }
 
 export default async function SopsPage() {
-  const { supabase, profile } = await requireUser();
-  const canManage = isManagerOrAdmin(profile);
+  const { supabase, access } = await requireUser();
+  const canManage = access("sops", "manage");
 
   const { data: answered } = await supabase
     .from("sop_entries")

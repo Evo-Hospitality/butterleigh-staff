@@ -2,7 +2,8 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { canAccessMaintenance, isManagerOrAdmin, type Profile } from "@/lib/types";
+import type { Profile } from "@/lib/types";
+import { levelFor, meets, type AccessLevel, type AppKey } from "@/lib/access";
 
 // Centralizes "who is the current user, and what can they do". Server
 // Components/Actions use this for UX (hiding admin-only buttons, redirecting
@@ -28,7 +29,28 @@ export async function requireUser() {
     redirect("/login");
   }
 
-  return { supabase, user, profile };
+  const { data: grantRows } = await supabase
+    .from("app_access")
+    .select("app, level")
+    .eq("staff_id", user.id)
+    .returns<{ app: string; level: AccessLevel }[]>();
+
+  const grants = new Map<string, AccessLevel>((grantRows ?? []).map((g) => [g.app, g.level]));
+  const isAdmin = profile.role === "admin";
+  const access = (app: AppKey, required: "use" | "manage" = "use") =>
+    meets(levelFor(grants, app, isAdmin), required);
+
+  return { supabase, user, profile, grants, access };
+}
+
+// The single gate. Everything that used to have its own bespoke rule —
+// maintenance access flags, manager-or-admin checks — comes through here.
+export async function requireAppAccess(app: AppKey, required: "use" | "manage" = "use") {
+  const result = await requireUser();
+  if (!result.access(app, required)) {
+    redirect("/");
+  }
+  return result;
 }
 
 export async function requireAdmin() {
@@ -41,59 +63,42 @@ export async function requireAdmin() {
 
 // Approvers are anyone who manages at least one person, plus admins (who act
 // as the fallback approver for staff at the top of the manager chain).
+// Approving holiday is the one thing still tied to the reporting line as
+// well as the app: you need Manage on Holiday, and RLS still limits you to
+// your own reports.
 export async function requireApprover() {
   const result = await requireUser();
-  if (!result.profile.is_manager && result.profile.role !== "admin") {
+  if (!result.access("holiday", "manage")) {
     redirect("/holiday");
   }
   return result;
 }
 
 export async function requireMaintenanceAccess() {
-  const result = await requireUser();
-  if (!canAccessMaintenance(result.profile)) {
-    redirect("/");
-  }
-  return result;
+  return requireAppAccess("maintenance");
 }
 
 // Answering SOP questions / authoring one directly — same admin-or-manager
 // fallback used by can_manage_sops() in RLS.
 export async function requireSopManage() {
-  const result = await requireUser();
-  if (!isManagerOrAdmin(result.profile)) {
-    redirect("/sops");
-  }
-  return result;
+  return requireAppAccess("sops", "manage");
 }
 
 // Deciding (approve/decline) an event suggestion — same admin-or-manager
 // fallback used by can_manage_events() in RLS.
 export async function requireEventsManage() {
-  const result = await requireUser();
-  if (!isManagerOrAdmin(result.profile)) {
-    redirect("/events");
-  }
-  return result;
+  return requireAppAccess("events", "manage");
 }
 
 // Check Ins is the management meeting's own workspace — same population as
 // Actions, and for the same reason: only managers and admins are in the room.
 export async function requireCheckinsAccess() {
-  const result = await requireUser();
-  if (!isManagerOrAdmin(result.profile)) {
-    redirect("/");
-  }
-  return result;
+  return requireAppAccess("overview");
 }
 
 // Whole-app gate for Actions — unlike Maintenance there's no separate
 // per-person opt-in flag; eligibility just *is* "manager or admin", since
 // only they can ever raise or own one.
 export async function requireActionItemsAccess() {
-  const result = await requireUser();
-  if (!isManagerOrAdmin(result.profile)) {
-    redirect("/");
-  }
-  return result;
+  return requireAppAccess("actions");
 }
