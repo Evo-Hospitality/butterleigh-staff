@@ -8,6 +8,7 @@ import { bankDetailsChanged, readBankFields } from "@/lib/onboarding/details";
 import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
 import { formatUkPhone } from "@/lib/phone";
 import { formatAddress } from "@/lib/address";
+import { formatName } from "@/lib/name-case";
 import { notifyBankChangeRequested } from "@/lib/onboarding/notifications";
 import type { EmployeeDetails } from "@/lib/types";
 
@@ -22,7 +23,7 @@ export async function updateMyContactDetailsAction(formData: FormData) {
 
   const home_address = formatAddress(String(formData.get("home_address") ?? ""));
   const mobile_phone = formatUkPhone(String(formData.get("mobile_phone") ?? ""));
-  const emergency_contact_name = String(formData.get("emergency_contact_name") ?? "").trim();
+  const emergency_contact_name = formatName(String(formData.get("emergency_contact_name") ?? ""));
   const emergency_contact_phone = formatUkPhone(String(formData.get("emergency_contact_phone") ?? ""));
   const emergency_contact_email = String(formData.get("emergency_contact_email") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();

@@ -7,6 +7,7 @@ import { accountNumberDigits, formatSortCode } from "@/lib/bank-details";
 import { formatNiNumber } from "@/lib/ni-number";
 import { formatUkPhone } from "@/lib/phone";
 import { formatAddress } from "@/lib/address";
+import { formatName } from "@/lib/name-case";
 
 // Reading these fields out of a form, in one place, so the onboarding form
 // and the later "my details" edits can't drift apart on trimming or which
@@ -45,6 +46,8 @@ export function readDetailFields(formData: FormData): DetailFields {
   // Compact and uppercase, so payroll never sees the same number written two
   // different ways.
   out.ni_number = formatNiNumber(out.ni_number);
+  out.full_name = formatName(out.full_name);
+  out.emergency_contact_name = formatName(out.emergency_contact_name);
   out.home_address = formatAddress(out.home_address);
   out.mobile_phone = formatUkPhone(out.mobile_phone);
   out.emergency_contact_phone = formatUkPhone(out.emergency_contact_phone);

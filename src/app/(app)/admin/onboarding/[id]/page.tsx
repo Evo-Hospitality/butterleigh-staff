@@ -11,6 +11,7 @@ import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { NiNumberInput } from "@/components/ni-number-input";
 import { PhoneInput } from "@/components/phone-input";
 import { AddressInput } from "@/components/address-input";
+import { NameInput } from "@/components/name-input";
 import { HmrcStatementPicker } from "@/components/hmrc-statement-picker";
 import { hmrcStatementSummary } from "@/lib/hmrc-statement";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
@@ -282,7 +283,14 @@ export default async function AdminEmployeeDetailsPage({
         </p>
         <form action={saveEmployeeDetailsAction} className="flex max-w-xl flex-col gap-4">
           <input type="hidden" name="staff_id" value={person.id} />
-          <Field label="Full name" name="full_name" defaultValue={details?.full_name ?? person.full_name} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Full name</label>
+            <NameInput
+              name="full_name"
+              defaultValue={details?.full_name ?? person.full_name}
+              required={false}
+            />
+          </div>
           <Field label="Start date" name="start_date" type="date" defaultValue={details?.start_date} />
           <Field label="Date of birth" name="date_of_birth" type="date" defaultValue={details?.date_of_birth} />
           <div>
@@ -306,7 +314,14 @@ export default async function AdminEmployeeDetailsPage({
           </div>
 
           <h3 className="mt-2 font-semibold text-primary">Emergency contact</h3>
-          <Field label="Name" name="emergency_contact_name" defaultValue={details?.emergency_contact_name} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Name</label>
+            <NameInput
+              name="emergency_contact_name"
+              defaultValue={details?.emergency_contact_name}
+              required={false}
+            />
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Phone number</label>
             <PhoneInput

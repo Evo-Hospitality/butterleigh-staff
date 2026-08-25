@@ -3,6 +3,7 @@ import { AccountNumberInput, SortCodeInput } from "./bank-inputs";
 import { NiNumberInput } from "./ni-number-input";
 import { PhoneInput } from "./phone-input";
 import { AddressInput } from "./address-input";
+import { NameInput } from "./name-input";
 
 function Field({
   label,
@@ -42,7 +43,10 @@ function Field({
 export function PersonalFields({ details, email }: { details: EmployeeDetails | null; email: string }) {
   return (
     <div className="flex flex-col gap-4">
-      <Field label="Full name" name="full_name" defaultValue={details?.full_name} />
+      <div>
+        <label className="mb-1 block text-sm font-medium">Full name</label>
+        <NameInput name="full_name" defaultValue={details?.full_name} />
+      </div>
       <Field label="Start date" name="start_date" type="date" defaultValue={details?.start_date} />
       <Field
         label="Date of birth"
@@ -80,7 +84,10 @@ export function PersonalFields({ details, email }: { details: EmployeeDetails | 
 export function EmergencyFields({ details }: { details: EmployeeDetails | null }) {
   return (
     <div className="flex flex-col gap-4">
-      <Field label="Emergency contact name" name="emergency_contact_name" defaultValue={details?.emergency_contact_name} />
+      <div>
+        <label className="mb-1 block text-sm font-medium">Emergency contact name</label>
+        <NameInput name="emergency_contact_name" defaultValue={details?.emergency_contact_name} />
+      </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Emergency contact phone number</label>
         <PhoneInput

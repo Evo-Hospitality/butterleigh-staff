@@ -5,6 +5,7 @@ import { documentsWithUrls } from "@/lib/onboarding/details";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { PhoneInput } from "@/components/phone-input";
 import { AddressInput } from "@/components/address-input";
+import { NameInput } from "@/components/name-input";
 import { formatSortCode } from "@/lib/bank-details";
 import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
@@ -162,11 +163,13 @@ export default async function MyDetailsPage({
             defaultValue={profile.email}
             hint="This is also how you sign in — changing it changes your login."
           />
-          <Field
-            label="Emergency contact name"
-            name="emergency_contact_name"
-            defaultValue={details?.emergency_contact_name}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Emergency contact name</label>
+            <NameInput
+              name="emergency_contact_name"
+              defaultValue={details?.emergency_contact_name}
+            />
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Emergency contact phone number</label>
             <PhoneInput
