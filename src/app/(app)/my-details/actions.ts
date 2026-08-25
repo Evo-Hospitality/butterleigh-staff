@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { updateStaffEmail } from "@/lib/holiday/staff";
 import { bankDetailsChanged, readBankFields } from "@/lib/onboarding/details";
 import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
+import { formatUkPhone } from "@/lib/phone";
 import { notifyBankChangeRequested } from "@/lib/onboarding/notifications";
 import type { EmployeeDetails } from "@/lib/types";
 
@@ -19,9 +20,9 @@ export async function updateMyContactDetailsAction(formData: FormData) {
   const { supabase, user, profile } = await requireUser();
 
   const home_address = String(formData.get("home_address") ?? "").trim();
-  const mobile_phone = String(formData.get("mobile_phone") ?? "").trim();
+  const mobile_phone = formatUkPhone(String(formData.get("mobile_phone") ?? ""));
   const emergency_contact_name = String(formData.get("emergency_contact_name") ?? "").trim();
-  const emergency_contact_phone = String(formData.get("emergency_contact_phone") ?? "").trim();
+  const emergency_contact_phone = formatUkPhone(String(formData.get("emergency_contact_phone") ?? ""));
   const emergency_contact_email = String(formData.get("emergency_contact_email") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
 

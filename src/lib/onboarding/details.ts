@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { EmployeeDocument } from "@/lib/types";
 import { accountNumberDigits, formatSortCode } from "@/lib/bank-details";
 import { formatNiNumber } from "@/lib/ni-number";
+import { formatUkPhone } from "@/lib/phone";
 
 // Reading these fields out of a form, in one place, so the onboarding form
 // and the later "my details" edits can't drift apart on trimming or which
@@ -43,6 +44,8 @@ export function readDetailFields(formData: FormData): DetailFields {
   // Compact and uppercase, so payroll never sees the same number written two
   // different ways.
   out.ni_number = formatNiNumber(out.ni_number);
+  out.mobile_phone = formatUkPhone(out.mobile_phone);
+  out.emergency_contact_phone = formatUkPhone(out.emergency_contact_phone);
   return out;
 }
 

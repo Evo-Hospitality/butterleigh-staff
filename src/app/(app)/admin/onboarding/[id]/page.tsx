@@ -9,6 +9,7 @@ import { DocumentTypeSelect } from "@/components/document-type-select";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { NiNumberInput } from "@/components/ni-number-input";
+import { PhoneInput } from "@/components/phone-input";
 import { HmrcStatementPicker } from "@/components/hmrc-statement-picker";
 import { hmrcStatementSummary } from "@/lib/hmrc-statement";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
@@ -303,16 +304,21 @@ export default async function AdminEmployeeDetailsPage({
               className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </div>
-          <Field label="Mobile phone number" name="mobile_phone" type="tel" defaultValue={details?.mobile_phone} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Mobile phone number</label>
+            <PhoneInput name="mobile_phone" defaultValue={details?.mobile_phone} required={false} />
+          </div>
 
           <h3 className="mt-2 font-semibold text-primary">Emergency contact</h3>
           <Field label="Name" name="emergency_contact_name" defaultValue={details?.emergency_contact_name} />
-          <Field
-            label="Phone number"
-            name="emergency_contact_phone"
-            type="tel"
-            defaultValue={details?.emergency_contact_phone}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Phone number</label>
+            <PhoneInput
+              name="emergency_contact_phone"
+              defaultValue={details?.emergency_contact_phone}
+              required={false}
+            />
+          </div>
           <Field
             label="Email"
             name="emergency_contact_email"

@@ -3,6 +3,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { documentsWithUrls } from "@/lib/onboarding/details";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
+import { PhoneInput } from "@/components/phone-input";
 import { formatSortCode } from "@/lib/bank-details";
 import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
@@ -155,7 +156,10 @@ export default async function MyDetailsPage({
               className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </div>
-          <Field label="Mobile phone number" name="mobile_phone" type="tel" defaultValue={details?.mobile_phone} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Mobile phone number</label>
+            <PhoneInput name="mobile_phone" defaultValue={details?.mobile_phone} />
+          </div>
           <Field
             label="Email address"
             name="email"
@@ -168,12 +172,13 @@ export default async function MyDetailsPage({
             name="emergency_contact_name"
             defaultValue={details?.emergency_contact_name}
           />
-          <Field
-            label="Emergency contact phone number"
-            name="emergency_contact_phone"
-            type="tel"
-            defaultValue={details?.emergency_contact_phone}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium">Emergency contact phone number</label>
+            <PhoneInput
+              name="emergency_contact_phone"
+              defaultValue={details?.emergency_contact_phone}
+            />
+          </div>
           <Field
             label="Emergency contact email"
             name="emergency_contact_email"

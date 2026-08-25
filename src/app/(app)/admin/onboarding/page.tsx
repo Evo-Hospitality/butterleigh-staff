@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 import { formatSortCode } from "@/lib/bank-details";
+import { formatUkPhone } from "@/lib/phone";
 import type { BankChangeRequest, EmployeeDetails, Profile } from "@/lib/types";
 import { decideBankChangeAction } from "./actions";
 
@@ -107,7 +108,7 @@ export default async function AdminOnboardingPage({
                 <p className="font-semibold">{request.staff_name}</p>
                 <p className="mb-1 text-xs text-muted-foreground">
                   Requested {formatDateTime(request.requested_at)} · phone on file:{" "}
-                  {detailsByStaff.get(request.staff_id)?.mobile_phone ?? "none"}
+                  {formatUkPhone(detailsByStaff.get(request.staff_id)?.mobile_phone) || "none"}
                 </p>
                 <dl className="mb-3 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
                   <div>
