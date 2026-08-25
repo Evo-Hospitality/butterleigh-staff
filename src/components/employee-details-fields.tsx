@@ -2,6 +2,7 @@ import type { EmployeeDetails } from "@/lib/types";
 import { AccountNumberInput, SortCodeInput } from "./bank-inputs";
 import { NiNumberInput } from "./ni-number-input";
 import { PhoneInput } from "./phone-input";
+import { AddressInput } from "./address-input";
 
 function Field({
   label,
@@ -59,13 +60,7 @@ export function PersonalFields({ details, email }: { details: EmployeeDetails | 
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Home address</label>
-        <textarea
-          name="home_address"
-          required
-          rows={3}
-          defaultValue={details?.home_address ?? ""}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm"
-        />
+        <AddressInput defaultValue={details?.home_address} />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Mobile phone number</label>

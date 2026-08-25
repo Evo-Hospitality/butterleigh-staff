@@ -4,6 +4,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { documentsWithUrls } from "@/lib/onboarding/details";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { PhoneInput } from "@/components/phone-input";
+import { AddressInput } from "@/components/address-input";
 import { formatSortCode } from "@/lib/bank-details";
 import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
@@ -148,13 +149,7 @@ export default async function MyDetailsPage({
         <form action={updateMyContactDetailsAction} className="flex max-w-xl flex-col gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Home address</label>
-            <textarea
-              name="home_address"
-              required
-              rows={3}
-              defaultValue={details?.home_address ?? ""}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm"
-            />
+            <AddressInput defaultValue={details?.home_address} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Mobile phone number</label>

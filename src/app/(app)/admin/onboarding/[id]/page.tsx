@@ -10,6 +10,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { NiNumberInput } from "@/components/ni-number-input";
 import { PhoneInput } from "@/components/phone-input";
+import { AddressInput } from "@/components/address-input";
 import { HmrcStatementPicker } from "@/components/hmrc-statement-picker";
 import { hmrcStatementSummary } from "@/lib/hmrc-statement";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
@@ -297,12 +298,7 @@ export default async function AdminEmployeeDetailsPage({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Home address</label>
-            <textarea
-              name="home_address"
-              rows={3}
-              defaultValue={details?.home_address ?? ""}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm"
-            />
+            <AddressInput defaultValue={details?.home_address} required={false} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Mobile phone number</label>
