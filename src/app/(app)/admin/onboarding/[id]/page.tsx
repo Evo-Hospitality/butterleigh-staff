@@ -8,6 +8,7 @@ import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
 import { DocumentTypeSelect } from "@/components/document-type-select";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
+import { NiNumberInput } from "@/components/ni-number-input";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
 import {
   approveOnboardingAction,
@@ -273,7 +274,10 @@ export default async function AdminEmployeeDetailsPage({
           <Field label="Full name" name="full_name" defaultValue={details?.full_name ?? person.full_name} />
           <Field label="Start date" name="start_date" type="date" defaultValue={details?.start_date} />
           <Field label="Date of birth" name="date_of_birth" type="date" defaultValue={details?.date_of_birth} />
-          <Field label="National Insurance number" name="ni_number" defaultValue={details?.ni_number} />
+          <div>
+            <label className="mb-1 block text-sm font-medium">National Insurance number</label>
+            <NiNumberInput defaultValue={details?.ni_number} required={false} />
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Home address</label>
             <textarea

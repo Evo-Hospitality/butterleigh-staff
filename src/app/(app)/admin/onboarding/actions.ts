@@ -14,6 +14,7 @@ import {
 import { notifyBankChangeDecided, notifyOnboardingDecided } from "@/lib/onboarding/notifications";
 import type { BankChangeRequest, EmployeeDocument } from "@/lib/types";
 import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
+import { isCompleteNiNumber } from "@/lib/ni-number";
 
 function fail(staffId: string, message: string): never {
   redirect(`/admin/onboarding/${staffId}?error=${encodeURIComponent(message)}`);
@@ -34,6 +35,9 @@ export async function saveEmployeeDetailsAction(formData: FormData) {
 
   // A half-filled record is expected here while migrating someone across, so
   // an empty sort code is fine — a wrong one isn't.
+  if (fields.ni_number && !isCompleteNiNumber(fields.ni_number)) {
+    fail(staffId, "A National Insurance number is nine characters, like QQ123456C.");
+  }
   if (bank.bank_sort_code && !isCompleteSortCode(bank.bank_sort_code)) {
     fail(staffId, "A sort code is six digits, like 12-34-56.");
   }

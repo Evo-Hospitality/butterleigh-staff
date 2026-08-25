@@ -15,6 +15,7 @@ import { notifyOnboardingSubmitted } from "@/lib/onboarding/notifications";
 import type { BankFields, DetailFields } from "@/lib/onboarding/details";
 import { updateStaffEmail } from "@/lib/holiday/staff";
 import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
+import { isCompleteNiNumber } from "@/lib/ni-number";
 import type { EmployeeDetails } from "@/lib/types";
 
 function fail(message: string): never {
@@ -99,6 +100,9 @@ export async function submitOnboardingAction(formData: FormData) {
   const missing = missingFields(fields, bank);
   if (missing.length > 0) {
     fail(`Still needed: ${missing.join(", ")}.`);
+  }
+  if (!isCompleteNiNumber(fields.ni_number)) {
+    fail("A National Insurance number is nine characters, like QQ123456C.");
   }
   if (!isCompleteSortCode(bank.bank_sort_code)) {
     fail("A sort code is six digits, like 12-34-56.");

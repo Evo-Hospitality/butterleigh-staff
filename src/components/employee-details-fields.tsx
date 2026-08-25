@@ -1,5 +1,6 @@
 import type { EmployeeDetails } from "@/lib/types";
 import { AccountNumberInput, SortCodeInput } from "./bank-inputs";
+import { NiNumberInput } from "./ni-number-input";
 
 function Field({
   label,
@@ -48,12 +49,13 @@ export function PersonalFields({ details, email }: { details: EmployeeDetails | 
         defaultValue={details?.date_of_birth}
         hint="Double-check the year — it's the most common mistake on this form."
       />
-      <Field
-        label="National Insurance number"
-        name="ni_number"
-        defaultValue={details?.ni_number}
-        hint="On your payslip, P60, or in your HMRC app. Format: QQ 12 34 56 C"
-      />
+      <div>
+        <label className="mb-1 block text-sm font-medium">National Insurance number</label>
+        <p className="mb-1 text-xs text-muted-foreground">
+          On your payslip, P60, or in your HMRC app. Nine characters, no spaces — like QQ123456C
+        </p>
+        <NiNumberInput defaultValue={details?.ni_number} />
+      </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Home address</label>
         <textarea

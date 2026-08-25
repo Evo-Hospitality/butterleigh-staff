@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { EmployeeDocument } from "@/lib/types";
 import { accountNumberDigits, formatSortCode } from "@/lib/bank-details";
+import { formatNiNumber } from "@/lib/ni-number";
 
 // Reading these fields out of a form, in one place, so the onboarding form
 // and the later "my details" edits can't drift apart on trimming or which
@@ -37,6 +38,9 @@ export function readDetailFields(formData: FormData): DetailFields {
   for (const key of TEXT_FIELDS) {
     out[key] = String(formData.get(key) ?? "").trim();
   }
+  // Compact and uppercase, so payroll never sees the same number written two
+  // different ways.
+  out.ni_number = formatNiNumber(out.ni_number);
   return out;
 }
 
