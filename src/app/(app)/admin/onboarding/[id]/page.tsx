@@ -9,6 +9,8 @@ import { DocumentTypeSelect } from "@/components/document-type-select";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { NiNumberInput } from "@/components/ni-number-input";
+import { HmrcStatementPicker } from "@/components/hmrc-statement-picker";
+import { hmrcStatementSummary } from "@/lib/hmrc-statement";
 import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
 import {
   approveOnboardingAction,
@@ -132,6 +134,13 @@ export default async function AdminEmployeeDetailsPage({
             </form>
           </div>
         </section>
+      )}
+
+      {details?.hmrc_statement && (
+        <p className="mb-6 rounded-md border border-border bg-muted px-4 py-3 text-sm">
+          <span className="font-semibold text-primary">HMRC starter statement:</span>{" "}
+          {hmrcStatementSummary(details.hmrc_statement)}
+        </p>
       )}
 
       <section className="mb-8">
@@ -277,6 +286,13 @@ export default async function AdminEmployeeDetailsPage({
           <div>
             <label className="mb-1 block text-sm font-medium">National Insurance number</label>
             <NiNumberInput defaultValue={details?.ni_number} required={false} />
+          </div>
+          <div>
+            <p className="mb-1 text-sm font-medium">HMRC starter statement</p>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Which one they ticked on the checklist. Sets their tax code.
+            </p>
+            <HmrcStatementPicker defaultValue={details?.hmrc_statement} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Home address</label>

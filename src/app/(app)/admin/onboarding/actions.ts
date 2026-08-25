@@ -15,6 +15,7 @@ import { notifyBankChangeDecided, notifyOnboardingDecided } from "@/lib/onboardi
 import type { BankChangeRequest, EmployeeDocument } from "@/lib/types";
 import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
 import { isCompleteNiNumber } from "@/lib/ni-number";
+import { isHmrcStatement } from "@/lib/hmrc-statement";
 
 function fail(staffId: string, message: string): never {
   redirect(`/admin/onboarding/${staffId}?error=${encodeURIComponent(message)}`);
@@ -35,6 +36,9 @@ export async function saveEmployeeDetailsAction(formData: FormData) {
 
   // A half-filled record is expected here while migrating someone across, so
   // an empty sort code is fine — a wrong one isn't.
+  if (fields.hmrc_statement && !isHmrcStatement(fields.hmrc_statement)) {
+    fail(staffId, "The HMRC starter statement must be A, B or C.");
+  }
   if (fields.ni_number && !isCompleteNiNumber(fields.ni_number)) {
     fail(staffId, "A National Insurance number is nine characters, like QQ123456C.");
   }
@@ -58,6 +62,7 @@ export async function saveEmployeeDetailsAction(formData: FormData) {
     // Dates reject an empty string, unlike text.
     start_date: fields.start_date || null,
     date_of_birth: fields.date_of_birth || null,
+    hmrc_statement: fields.hmrc_statement || null,
     updated_at: new Date().toISOString(),
   };
 

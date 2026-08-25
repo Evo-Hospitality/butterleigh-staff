@@ -13,6 +13,7 @@ export type DetailFields = {
   full_name: string;
   start_date: string;
   ni_number: string;
+  hmrc_statement: string;
   date_of_birth: string;
   home_address: string;
   mobile_phone: string;
@@ -25,6 +26,7 @@ const TEXT_FIELDS: (keyof DetailFields)[] = [
   "full_name",
   "start_date",
   "ni_number",
+  "hmrc_statement",
   "date_of_birth",
   "home_address",
   "mobile_phone",
@@ -52,6 +54,7 @@ export function missingFields(fields: DetailFields, bank: BankFields): string[] 
     full_name: "Full name",
     start_date: "Start date",
     ni_number: "National Insurance number",
+    hmrc_statement: "HMRC starter statement (A, B or C)",
     date_of_birth: "Date of birth",
     home_address: "Home address",
     mobile_phone: "Mobile phone number",

@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { BankFields, EmergencyFields, PersonalFields } from "@/components/employee-details-fields";
 import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
+import { HmrcStatementPicker } from "@/components/hmrc-statement-picker";
 import { documentsWithUrls } from "@/lib/onboarding/details";
 import type { EmployeeDetails, EmployeeDocument } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
@@ -140,6 +141,18 @@ export default async function OnboardingPage({
           )}
 
           <EmployeeDocumentPicker staffId={user.id} label="+ Add a page" />
+
+          <div className="mt-6">
+            <p className="mb-1 text-sm font-medium">
+              Which statement did you tick — A, B or C?
+            </p>
+            <p className="mb-3 max-w-2xl text-xs text-muted-foreground">
+              It&apos;s the question on the checklist about whether you&apos;ve had another job
+              since 6 April. Pick the one that matches what you put — it sets the tax code on your
+              first payslip.
+            </p>
+            <HmrcStatementPicker defaultValue={details?.hmrc_statement} />
+          </div>
         </section>
 
         <section>

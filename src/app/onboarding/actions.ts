@@ -16,6 +16,7 @@ import type { BankFields, DetailFields } from "@/lib/onboarding/details";
 import { updateStaffEmail } from "@/lib/holiday/staff";
 import { isCompleteAccountNumber, isCompleteSortCode } from "@/lib/bank-details";
 import { isCompleteNiNumber } from "@/lib/ni-number";
+import { isHmrcStatement } from "@/lib/hmrc-statement";
 import type { EmployeeDetails } from "@/lib/types";
 
 function fail(message: string): never {
@@ -29,6 +30,9 @@ function detailRow(fields: DetailFields, bank: BankFields) {
     ...bank,
     start_date: fields.start_date || null,
     date_of_birth: fields.date_of_birth || null,
+    // An unanswered radio group posts nothing at all, and the column only
+    // accepts A, B, C or null — never an empty string.
+    hmrc_statement: fields.hmrc_statement || null,
   };
 }
 
@@ -100,6 +104,9 @@ export async function submitOnboardingAction(formData: FormData) {
   const missing = missingFields(fields, bank);
   if (missing.length > 0) {
     fail(`Still needed: ${missing.join(", ")}.`);
+  }
+  if (!isHmrcStatement(fields.hmrc_statement)) {
+    fail("Pick the statement — A, B or C — that matches your HMRC checklist.");
   }
   if (!isCompleteNiNumber(fields.ni_number)) {
     fail("A National Insurance number is nine characters, like QQ123456C.");

@@ -9,6 +9,9 @@ export type EmployeeDetails = {
   full_name: string | null;
   start_date: string | null;
   ni_number: string | null;
+  // Which of the three employee statements they ticked on the HMRC Starter
+  // Checklist — decides their tax code on the first payslip.
+  hmrc_statement: "A" | "B" | "C" | null;
   date_of_birth: string | null;
   home_address: string | null;
   mobile_phone: string | null;
