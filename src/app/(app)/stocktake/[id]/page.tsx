@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import type { StockTake, StockTakeEntry, StockTakeQuantity } from "@/lib/types";
+import type { StockTake } from "@/lib/types";
+import { buildStockTakeSheet } from "@/lib/stocktake/sheet";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteSubmittedStockTakeAction } from "../actions";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 
 export default async function StockTakeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { supabase, profile } = await requireUser();
+  const { supabase, access } = await requireUser();
   const { id } = await params;
 
   const { data: stockTake } = await supabase.from("stock_takes").select("*").eq("id", id).single<StockTake>();
@@ -16,50 +17,10 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
     redirect(`/stocktake/${id}/edit`);
   }
 
-  const { data: entries } = await supabase
-    .from("stock_take_entries")
-    .select("*")
-    .eq("stock_take_id", id)
-    .order("created_at")
-    .returns<StockTakeEntry[]>();
+  const sheet = await buildStockTakeSheet(supabase, id);
+  if (!sheet) notFound();
+  const { locations: locationOrder, groups, grandTotal } = sheet;
 
-  const entryIds = (entries ?? []).map((e) => e.id);
-  const { data: quantities } = entryIds.length
-    ? await supabase.from("stock_take_quantities").select("*").in("stock_take_entry_id", entryIds).returns<StockTakeQuantity[]>()
-    : { data: [] as StockTakeQuantity[] };
-
-  // Location columns come from the recorded quantities' own location_name
-  // snapshot, not the current stock_locations list — a location could have
-  // been renamed or removed since this stocktake ran; the historical
-  // record shouldn't change because of that.
-  const locationOrder: { key: string; name: string }[] = [];
-  const seenLocations = new Set<string>();
-  for (const q of quantities ?? []) {
-    const key = q.location_id ?? q.location_name;
-    if (!seenLocations.has(key)) {
-      seenLocations.add(key);
-      locationOrder.push({ key, name: q.location_name });
-    }
-  }
-
-  const quantitiesByEntryId = new Map<string, Map<string, number>>();
-  for (const q of quantities ?? []) {
-    const key = q.location_id ?? q.location_name;
-    const map = quantitiesByEntryId.get(q.stock_take_entry_id) ?? new Map<string, number>();
-    map.set(key, Number(q.quantity));
-    quantitiesByEntryId.set(q.stock_take_entry_id, map);
-  }
-
-  const groupOrder: string[] = [];
-  for (const e of entries ?? []) {
-    if (!groupOrder.includes(e.group_name)) groupOrder.push(e.group_name);
-  }
-  const groups = groupOrder.map((groupName) => ({
-    groupName,
-    entries: (entries ?? []).filter((e) => e.group_name === groupName),
-  }));
-
-  const grandTotal = (entries ?? []).reduce((sum, e) => sum + Number(e.value), 0);
 
   return (
     <div>
@@ -69,6 +30,12 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
 
       <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold text-primary capitalize">{stockTake.type} stocktake</h1>
+        <a
+          href={`/stocktake/${id}/export`}
+          className="rounded-md border border-border px-3 py-1.5 text-sm font-semibold text-primary hover:border-accent hover:text-accent"
+        >
+          Download as Excel
+        </a>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
         Stock as at {formatDateOnly(stockTake.stock_date)} · Submitted by {stockTake.submitted_by_name}
@@ -76,7 +43,7 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
         {stockTake.notes && <> · {stockTake.notes}</>}
       </p>
 
-      {groups.map(({ groupName, entries: groupEntries }) => (
+      {groups.map(({ groupName, rows: groupRows }) => (
         <div key={groupName} className="mb-6 overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left text-muted-foreground">
@@ -103,8 +70,7 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
               </tr>
             </thead>
             <tbody>
-              {groupEntries.map((entry) => {
-                const qs = quantitiesByEntryId.get(entry.id);
+              {groupRows.map(({ entry, quantities: qs }) => {
                 return (
                   <tr key={entry.id} className="border-t border-border">
                     <td className="sticky left-0 z-10 bg-background px-3 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]">
@@ -132,7 +98,7 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
         <span className="text-lg font-bold text-primary">£{grandTotal.toFixed(2)}</span>
       </div>
 
-      {profile.role === "admin" && (
+      {access("stocktake", "manage") && (
         <ConfirmDeleteButton
           action={deleteSubmittedStockTakeAction.bind(null, id)}
           label="Delete this stocktake"
