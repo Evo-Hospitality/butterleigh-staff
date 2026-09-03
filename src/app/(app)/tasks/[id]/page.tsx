@@ -5,6 +5,9 @@ import { recurrenceLabel, isOverdue } from "@/lib/tasks/format";
 import type { Task, TaskReview } from "@/lib/types";
 import { completeTaskAction, reviewTaskAction } from "./actions";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { recurrenceDeleteWarning } from "@/lib/tasks/format";
+import { deleteTaskAction } from "../actions";
 
 function StatusBadge({ status }: { status: string }) {
   const style =
@@ -131,6 +134,22 @@ export default async function TaskDetailPage({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {profile.role === "admin" && (
+        <div className="mb-8 mt-2 rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="mb-2 text-sm font-semibold text-red-800">Danger zone</p>
+          <p className="mb-3 text-sm text-red-900">
+            Deleting removes this task and everything recorded against it. Use{" "}
+            <strong>Edit</strong> and untick Active instead if you just want it off the board.
+          </p>
+          <ConfirmDeleteButton
+            action={deleteTaskAction.bind(null, id)}
+            label="Delete this task"
+            confirmMessage={recurrenceDeleteWarning(task)}
+            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+          />
         </div>
       )}
 

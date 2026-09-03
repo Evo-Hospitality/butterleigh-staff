@@ -3,14 +3,17 @@ import { requireUser } from "@/lib/auth";
 import { recurrenceLabel, isOverdue } from "@/lib/tasks/format";
 import type { Task } from "@/lib/types";
 import { formatDate } from "@/lib/format";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { recurrenceDeleteWarning } from "@/lib/tasks/format";
+import { deleteTaskAction } from "./actions";
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, canDelete }: { task: Task; canDelete: boolean }) {
   const overdue = task.status === "pending" && isOverdue(task.due_date, task.due_time);
   return (
-    <Link
-      href={`/tasks/${task.id}`}
-      className="rounded-lg border border-border bg-background p-4 hover:border-accent"
-    >
+    // The delete button sits beside the link rather than inside it — a form
+    // nested in an anchor is invalid, and clicking it would navigate.
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-background hover:border-accent">
+      <Link href={`/tasks/${task.id}`} className="min-w-0 flex-1 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="font-medium text-primary">{task.title}</p>
         {task.status === "awaiting_review" && (
@@ -26,25 +29,42 @@ function TaskRow({ task }: { task: Task }) {
         {task.created_by_name} → {task.assigned_to_name} · {recurrenceLabel(task.recurrence_unit, task.recurrence_value)}
         {task.due_date && ` · Due ${formatDate(task.due_date)}`}
       </p>
-    </Link>
+      </Link>
+      {canDelete && (
+        <div className="p-4 pl-0">
+          <ConfirmDeleteButton
+            action={deleteTaskAction.bind(null, task.id)}
+            label="Delete"
+            confirmMessage={recurrenceDeleteWarning(task)}
+            className="text-xs font-semibold text-red-700 hover:underline"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
-function TaskList({ tasks, empty }: { tasks: Task[]; empty: string }) {
+function TaskList({ tasks, empty, canDelete }: { tasks: Task[]; empty: string; canDelete: boolean }) {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground">{empty}</p>;
   }
   return (
     <div className="flex flex-col gap-2">
       {tasks.map((t) => (
-        <TaskRow key={t.id} task={t} />
+        <TaskRow key={t.id} task={t} canDelete={canDelete} />
       ))}
     </div>
   );
 }
 
-export default async function TasksPage() {
-  const { supabase, user } = await requireUser();
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const { supabase, user, profile } = await requireUser();
+  const canDelete = profile.role === "admin";
 
   const { data: tasks } = await supabase
     .from("tasks")
@@ -85,18 +105,20 @@ export default async function TasksPage() {
         </div>
       </div>
 
+      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
       <h2 className="mb-3 text-lg font-bold text-primary">Needs your attention</h2>
       <div className="mb-8">
-        <TaskList tasks={needsAttention} empty="Nothing needs your attention right now." />
+        <TaskList tasks={needsAttention} empty="Nothing needs your attention right now." canDelete={canDelete} />
       </div>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Pending</h2>
       <div className="mb-8">
-        <TaskList tasks={pending} empty="No pending tasks." />
+        <TaskList tasks={pending} empty="No pending tasks." canDelete={canDelete} />
       </div>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Awaiting review</h2>
-      <TaskList tasks={awaitingReview} empty="Nothing awaiting review." />
+      <TaskList tasks={awaitingReview} empty="Nothing awaiting review." canDelete={canDelete} />
     </div>
   );
 }
