@@ -63,8 +63,9 @@ export default async function TasksPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const { supabase, user, profile } = await requireUser();
+  const { supabase, user, profile, access } = await requireUser();
   const canDelete = profile.role === "admin";
+  const canUseActions = access("actions");
 
   const { data: tasks } = await supabase
     .from("tasks")
@@ -106,6 +107,24 @@ export default async function TasksPage({
       </div>
 
       {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
+        Tasks are physical jobs that need doing around the pub — take the bins out, clear the
+        cellar, do the stocktake. Something you can walk up to and finish.
+        {canUseActions ? (
+          <>
+            {" "}
+            Anything that isn&apos;t a physical job — chasing a supplier, reviewing figures, a
+            decision that needs making — belongs in{" "}
+            <Link href="/actions" className="font-medium text-accent hover:underline">
+              Actions
+            </Link>{" "}
+            instead.
+          </>
+        ) : (
+          <> If it isn&apos;t a physical job, ask a manager to raise it as an Action instead.</>
+        )}
+      </p>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Needs your attention</h2>
       <div className="mb-8">

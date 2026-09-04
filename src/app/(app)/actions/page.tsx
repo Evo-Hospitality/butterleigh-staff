@@ -94,7 +94,7 @@ export default async function ActionsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-primary">Actions</h1>
         <Link
           href="/actions/new"
@@ -103,6 +103,18 @@ export default async function ActionsPage() {
           Raise an Action
         </Link>
       </div>
+
+      {/* The other half of the same distinction, worded from this side so it
+          reads the same whichever app you land in first. */}
+      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
+        Actions are the things that aren&apos;t a physical job — chasing a supplier, reviewing
+        figures, a decision that needs making. Physical jobs around the pub, like taking the bins
+        out or clearing the cellar, go in{" "}
+        <Link href="/tasks" className="font-medium text-accent hover:underline">
+          Tasks
+        </Link>{" "}
+        instead.
+      </p>
 
       {mine.length > 0 && (
         <>
