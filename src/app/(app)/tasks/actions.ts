@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireAppAccess } from "@/lib/auth";
 
 // Admin only, matching the RLS policy in 0039. A recurring task is one row
 // whose due date rolls forward, so this removes the whole series and its
@@ -21,4 +21,19 @@ export async function deleteTaskAction(taskId: string) {
   revalidatePath("/tasks");
   revalidatePath("/tasks/history");
   redirect("/tasks");
+}
+
+// Filed in the wrong app. Moves the whole record across (0040) rather than
+// making someone re-key it, which would lose who raised it and when.
+export async function moveTaskToActionAction(taskId: string) {
+  const { supabase } = await requireAppAccess("tasks");
+
+  const { data: newId, error } = await supabase.rpc("move_task_to_action", { p_task_id: taskId });
+  if (error) {
+    redirect(`/tasks?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath("/actions");
+  redirect(`/actions/${newId}`);
 }

@@ -5,9 +5,10 @@ import type { Task } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { recurrenceDeleteWarning } from "@/lib/tasks/format";
-import { deleteTaskAction } from "./actions";
+import { deleteTaskAction, moveTaskToActionAction } from "./actions";
+import { ConfirmButton } from "@/components/confirm-button";
 
-function TaskRow({ task, canDelete }: { task: Task; canDelete: boolean }) {
+function TaskRow({ task, canDelete, canMove }: { task: Task; canDelete: boolean; canMove: boolean }) {
   const overdue = task.status === "pending" && isOverdue(task.due_date, task.due_time);
   return (
     // The delete button sits beside the link rather than inside it — a form
@@ -30,28 +31,48 @@ function TaskRow({ task, canDelete }: { task: Task; canDelete: boolean }) {
         {task.due_date && ` · Due ${formatDate(task.due_date)}`}
       </p>
       </Link>
-      {canDelete && (
-        <div className="p-4 pl-0">
+      {(canMove || canDelete) && (
+        <div className="flex flex-col items-end gap-1 p-4 pl-0">
+          {canMove && (
+            <ConfirmButton
+              action={moveTaskToActionAction.bind(null, task.id)}
+              label="Move to Actions"
+              confirmMessage={`Move "${task.title}" to Actions? Its due date and any history are kept as notes on the Action, and it stops being a Task.`}
+              className="whitespace-nowrap text-xs font-semibold text-accent hover:underline"
+            />
+          )}
+          {canDelete && (
           <ConfirmDeleteButton
             action={deleteTaskAction.bind(null, task.id)}
             label="Delete"
             confirmMessage={recurrenceDeleteWarning(task)}
             className="text-xs font-semibold text-red-700 hover:underline"
           />
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function TaskList({ tasks, empty, canDelete }: { tasks: Task[]; empty: string; canDelete: boolean }) {
+function TaskList({
+  tasks,
+  empty,
+  canDelete,
+  canMove,
+}: {
+  tasks: Task[];
+  empty: string;
+  canDelete: boolean;
+  canMove: boolean;
+}) {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground">{empty}</p>;
   }
   return (
     <div className="flex flex-col gap-2">
       {tasks.map((t) => (
-        <TaskRow key={t.id} task={t} canDelete={canDelete} />
+        <TaskRow key={t.id} task={t} canDelete={canDelete} canMove={canMove} />
       ))}
     </div>
   );
@@ -126,16 +147,16 @@ export default async function TasksPage({
 
       <h2 className="mb-3 text-lg font-bold text-primary">Needs your attention</h2>
       <div className="mb-8">
-        <TaskList tasks={needsAttention} empty="Nothing needs your attention right now." canDelete={canDelete} />
+        <TaskList tasks={needsAttention} empty="Nothing needs your attention right now." canDelete={canDelete} canMove={canUseActions} />
       </div>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Pending</h2>
       <div className="mb-8">
-        <TaskList tasks={pending} empty="No pending tasks." canDelete={canDelete} />
+        <TaskList tasks={pending} empty="No pending tasks." canDelete={canDelete} canMove={canUseActions} />
       </div>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Awaiting review</h2>
-      <TaskList tasks={awaitingReview} empty="Nothing awaiting review." canDelete={canDelete} />
+      <TaskList tasks={awaitingReview} empty="Nothing awaiting review." canDelete={canDelete} canMove={canUseActions} />
     </div>
   );
 }

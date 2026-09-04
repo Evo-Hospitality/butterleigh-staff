@@ -3,6 +3,8 @@ import { requireActionItemsAccess } from "@/lib/auth";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { ActionItem, ActionItemUpdateEntry } from "@/lib/types";
 import { formatDate } from "@/lib/format";
+import { ConfirmButton } from "@/components/confirm-button";
+import { moveActionToTaskAction } from "./move-actions";
 
 function ActionTable({
   items,
@@ -24,6 +26,7 @@ function ActionTable({
             <th className="px-4 py-2 font-medium">Raised by</th>
             <th className="px-4 py-2 font-medium">Assigned to</th>
             <th className="px-4 py-2 font-medium">{showClosedDate ? "Closed" : "Raised"}</th>
+            <th className="px-4 py-2" />
           </tr>
         </thead>
         <tbody>
@@ -44,11 +47,19 @@ function ActionTable({
               <td className="px-4 py-2 text-muted-foreground">
                 {formatDate(showClosedDate ? (a.closed_at ?? a.created_at) : a.created_at)}
               </td>
+              <td className="px-4 py-2 text-right">
+                <ConfirmButton
+                  action={moveActionToTaskAction.bind(null, a.id)}
+                  label="Move to Tasks"
+                  confirmMessage={`Move "${a.title}" to Tasks? Its log and any photo are kept as notes on the Task, and it stops being an Action.`}
+                  className="whitespace-nowrap text-xs font-semibold text-accent hover:underline"
+                />
+              </td>
             </tr>
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">
+              <td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">
                 {empty}
               </td>
             </tr>

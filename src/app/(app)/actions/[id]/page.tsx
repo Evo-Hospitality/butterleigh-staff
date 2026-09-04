@@ -6,6 +6,8 @@ import { addNoteAction, deleteActionAction, reassignAction, setStatusAction } fr
 import { DeleteActionButton } from "./delete-button";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/format";
+import { ConfirmButton } from "@/components/confirm-button";
+import { moveActionToTaskAction } from "../move-actions";
 
 function StatusBadge({ status }: { status: string }) {
   const style = status === "open" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
@@ -168,6 +170,20 @@ export default async function ActionDetailPage({
           </div>
         </div>
       )}
+
+      <div className="mb-6 rounded-lg border border-border bg-muted p-4">
+        <p className="mb-2 text-sm">
+          <strong className="text-primary">Filed in the wrong place?</strong> If this is something
+          to be done at the pub during a shift, move it to Tasks. Everything comes with it — who
+          raised it, who it&apos;s for, and its log.
+        </p>
+        <ConfirmButton
+          action={moveActionToTaskAction.bind(null, id)}
+          label="Move to Tasks"
+          confirmMessage={`Move "${action.title}" to Tasks? Its log and any photo are kept as notes on the Task, and it stops being an Action.`}
+          className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium text-primary hover:border-accent hover:text-accent"
+        />
+      </div>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Log</h2>
       <div className="space-y-3">

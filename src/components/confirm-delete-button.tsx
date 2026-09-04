@@ -1,9 +1,13 @@
 "use client";
 
+import { ConfirmButton } from "./confirm-button";
+
 // Same confirm-then-submit pattern as the per-app delete buttons in Events,
 // Actions and Photos, but parameterised — Stocktake needs three of these
 // (discard a draft, delete a submitted one from the list, delete one from
 // its detail page) and three near-identical components isn't worth it.
+//
+// Delete-flavoured styling over the generic ConfirmButton.
 export function ConfirmDeleteButton({
   action,
   label,
@@ -16,18 +20,11 @@ export function ConfirmDeleteButton({
   className?: string;
 }) {
   return (
-    <form
+    <ConfirmButton
       action={action}
-      className="inline"
-      onSubmit={(e) => {
-        if (!confirm(confirmMessage)) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <button type="submit" className={className}>
-        {label}
-      </button>
-    </form>
+      label={label}
+      confirmMessage={confirmMessage}
+      className={className}
+    />
   );
 }

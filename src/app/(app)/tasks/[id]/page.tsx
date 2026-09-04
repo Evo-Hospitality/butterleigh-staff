@@ -7,7 +7,8 @@ import { completeTaskAction, reviewTaskAction } from "./actions";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { recurrenceDeleteWarning } from "@/lib/tasks/format";
-import { deleteTaskAction } from "../actions";
+import { deleteTaskAction, moveTaskToActionAction } from "../actions";
+import { ConfirmButton } from "@/components/confirm-button";
 
 function StatusBadge({ status }: { status: string }) {
   const style =
@@ -29,7 +30,7 @@ export default async function TaskDetailPage({
 }) {
   const { id } = await params;
   const { error } = await searchParams;
-  const { supabase, user, profile } = await requireUser();
+  const { supabase, user, profile, access } = await requireUser();
 
   const [{ data: task }, { data: reviews }] = await Promise.all([
     supabase.from("tasks").select("*").eq("id", id).single<Task>(),
@@ -134,6 +135,22 @@ export default async function TaskDetailPage({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {access("actions") && (
+        <div className="mb-6 mt-2 rounded-lg border border-border bg-muted p-4">
+          <p className="mb-2 text-sm">
+            <strong className="text-primary">Filed in the wrong place?</strong> If this is manager
+            work to be done away from the pub, move it to Actions. Everything comes with it — who
+            raised it, who it&apos;s for, and its history.
+          </p>
+          <ConfirmButton
+            action={moveTaskToActionAction.bind(null, id)}
+            label="Move to Actions"
+            confirmMessage={`Move "${task.title}" to Actions? Its due date and any history are kept as notes on the Action, and it stops being a Task.`}
+            className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium text-primary hover:border-accent hover:text-accent"
+          />
         </div>
       )}
 
