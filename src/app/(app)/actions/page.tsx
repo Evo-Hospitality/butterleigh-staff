@@ -107,9 +107,9 @@ export default async function ActionsPage() {
       {/* The other half of the same distinction, worded from this side so it
           reads the same whichever app you land in first. */}
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Actions are the things that aren&apos;t a physical job — chasing a supplier, reviewing
-        figures, a decision that needs making. Physical jobs around the pub, like taking the bins
-        out or clearing the cellar, go in{" "}
+        Actions are work between admins and managers, generally done away from the pub and picked
+        up at the weekly managers&apos; meeting. Anything that needs doing at the pub during a
+        shift — including chasing a supplier or checking figures — goes in{" "}
         <Link href="/tasks" className="font-medium text-accent hover:underline">
           Tasks
         </Link>{" "}

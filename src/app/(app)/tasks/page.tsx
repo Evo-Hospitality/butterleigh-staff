@@ -109,21 +109,19 @@ export default async function TasksPage({
       {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Tasks are physical jobs that need doing around the pub — take the bins out, clear the
-        cellar, do the stocktake. Something you can walk up to and finish.
+        Tasks are things that need doing at the pub, usually during a shift, by someone on the
+        team — taking the bins out, clearing the cellar, doing the stocktake, chasing a supplier,
+        checking figures. Mostly set by the managers on site for the staff.
         {canUseActions ? (
           <>
             {" "}
-            Anything that isn&apos;t a physical job — chasing a supplier, reviewing figures, a
-            decision that needs making — belongs in{" "}
+            Work that happens away from the pub, between admins and managers, goes in{" "}
             <Link href="/actions" className="font-medium text-accent hover:underline">
               Actions
             </Link>{" "}
             instead.
           </>
-        ) : (
-          <> If it isn&apos;t a physical job, ask a manager to raise it as an Action instead.</>
-        )}
+        ) : null}
       </p>
 
       <h2 className="mb-3 text-lg font-bold text-primary">Needs your attention</h2>

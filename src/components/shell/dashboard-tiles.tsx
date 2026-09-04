@@ -29,7 +29,7 @@ const TILES = [
   {
     href: "/tasks",
     label: "Tasks",
-    description: "Physical jobs around the pub — bins, cellar, stocktake",
+    description: "Jobs to be done at the pub, on shift",
     icon: CheckSquare,
     app: "tasks" as AppKey,
   },
@@ -71,7 +71,7 @@ const TILES = [
   {
     href: "/actions",
     label: "Actions",
-    description: "Non-physical things to chase, decide or review",
+    description: "Manager work off site, reviewed at the weekly meeting",
     icon: ClipboardList,
     app: "actions" as AppKey,
   },
