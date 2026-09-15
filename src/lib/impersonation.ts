@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { cookieSite, expiredCookie } from "@/lib/cookie-options";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -127,8 +128,7 @@ export async function startImpersonation(targetId: string) {
 
   cookieStore.set(COOKIE_NAME, JSON.stringify(stash), {
     httpOnly: true,
-    secure: true,
-    sameSite: "lax",
+    ...cookieSite,
     path: "/",
     maxAge: MAX_AGE,
   });
@@ -155,5 +155,5 @@ export async function stopImpersonation() {
   const admin = createAdminClient();
   await admin.from("impersonation_log").update({ ended_at: new Date().toISOString() }).eq("id", stash.logId);
 
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.set(COOKIE_NAME, "", { httpOnly: true, ...expiredCookie });
 }

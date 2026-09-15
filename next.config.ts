@@ -11,6 +11,22 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "20mb",
     },
   },
+  // Only this app itself and Gus's Launcher (a local app on port 8120) may show it
+  // inside a frame. Blocks other sites from framing it now that cookies are
+  // SameSite=None (see src/lib/cookie-options.ts).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self' http://localhost:8120 http://127.0.0.1:8120",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
