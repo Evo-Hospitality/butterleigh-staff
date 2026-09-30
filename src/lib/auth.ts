@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
@@ -8,7 +9,11 @@ import { levelFor, meets, type AccessLevel, type AppKey } from "@/lib/access";
 // Centralizes "who is the current user, and what can they do". Server
 // Components/Actions use this for UX (hiding admin-only buttons, redirecting
 // early); Postgres row-level security is the actual enforcement boundary.
-export async function requireUser() {
+//
+// Wrapped in cache() so the layout and the page share one lookup per
+// request. The profile and access grants only need the user id, so they
+// load side by side rather than one after the other.
+export const requireUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,22 +23,19 @@ export async function requireUser() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single<Profile>();
+  const [{ data: profile }, { data: grantRows }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single<Profile>(),
+    supabase
+      .from("app_access")
+      .select("app, level")
+      .eq("staff_id", user.id)
+      .returns<{ app: string; level: AccessLevel }[]>(),
+  ]);
 
   if (!profile?.active) {
     await supabase.auth.signOut();
     redirect("/login");
   }
-
-  const { data: grantRows } = await supabase
-    .from("app_access")
-    .select("app, level")
-    .eq("staff_id", user.id)
-    .returns<{ app: string; level: AccessLevel }[]>();
 
   const grants = new Map<string, AccessLevel>((grantRows ?? []).map((g) => [g.app, g.level]));
   const isAdmin = profile.role === "admin";
@@ -41,7 +43,7 @@ export async function requireUser() {
     meets(levelFor(grants, app, isAdmin), required);
 
   return { supabase, user, profile, grants, access };
-}
+});
 
 // The single gate. Everything that used to have its own bespoke rule —
 // maintenance access flags, manager-or-admin checks — comes through here.

@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "20mb",
     },
+    // Keep recently visited pages in the browser so going back to them is
+    // instant (any save still refreshes them via revalidatePath).
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
   },
   // Only this app itself and Gus's Launcher (a local app on port 8120) may show it
   // inside a frame. Blocks other sites from framing it now that cookies are
