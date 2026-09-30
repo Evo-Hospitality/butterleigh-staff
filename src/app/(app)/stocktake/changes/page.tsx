@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { StockItemChangeEntry, StockType } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
+import type { StockItemChangeEntry } from "@/lib/types";
+import Loading from "../../loading";
+import { useStocktakeView } from "../data";
 import { formatDateTime } from "@/lib/format";
 
 function formatValue(field: string, value: string | null) {
@@ -117,29 +121,12 @@ const DIRECTION_LABEL: Record<PriceTrend["direction"], string> = {
   mixed: "Up & down",
 };
 
-export default async function StockChangesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string }>;
-}) {
-  const { supabase } = await requireUser();
-  const params = await searchParams;
-  const type: StockType = params.type === "dry" ? "dry" : "wet";
+export default function StockChangesPage() {
+  const typeParam = useSearchParams().get("type") ?? undefined;
+  const view = useStocktakeView("changes", { type: typeParam });
+  if (!view.data) return <Loading />;
 
-  // stock_item_changes has no type column of its own — it's derived from
-  // the item the change belongs to, so filter by that item's type.
-  const { data: itemIds } = await supabase.from("stock_items").select("id").eq("type", type);
-  const ids = (itemIds ?? []).map((i) => i.id);
-
-  const { data: changes } = ids.length
-    ? await supabase
-        .from("stock_item_changes")
-        .select("*")
-        .in("stock_item_id", ids)
-        .order("created_at", { ascending: false })
-        .limit(500)
-        .returns<StockItemChangeEntry[]>()
-    : { data: [] as StockItemChangeEntry[] };
+  const { type, changes } = view.data;
 
   const trends = buildPriceTrends(changes ?? []);
   const risers = trends.filter((t) => t.delta > 0);
@@ -165,7 +152,7 @@ export default async function StockChangesPage({
 
       <div className="mb-4 flex gap-3 text-sm">
         {(["wet", "dry"] as const).map((t) => (
-          <a
+          <Link
             key={t}
             href={`/stocktake/changes?type=${t}`}
             className={`rounded-md border px-3 py-1.5 capitalize ${
@@ -173,7 +160,7 @@ export default async function StockChangesPage({
             }`}
           >
             {t}
-          </a>
+          </Link>
         ))}
       </div>
 

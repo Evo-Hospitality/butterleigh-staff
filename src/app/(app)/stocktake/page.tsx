@@ -1,22 +1,19 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { StockTake, StockTakeEntry } from "@/lib/types";
+import { useMe } from "@/lib/client/me";
+import Loading from "../loading";
+import { useStocktakeView } from "./data";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteStockTakeDraftAction, deleteSubmittedStockTakeAction } from "./actions";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 
-export default async function StockTakePage() {
-  const { supabase, access } = await requireUser();
+export default function StockTakePage() {
+  const { access } = useMe()!;
+  const view = useStocktakeView("list");
+  if (!view.data) return <Loading />;
 
-  const [{ data: stockTakes }, { data: entries }] = await Promise.all([
-    supabase.from("stock_takes").select("*").order("created_at", { ascending: false }).returns<StockTake[]>(),
-    supabase.from("stock_take_entries").select("stock_take_id, value").returns<Pick<StockTakeEntry, "stock_take_id" | "value">[]>(),
-  ]);
-
-  const valueByStockTake = new Map<string, number>();
-  for (const e of entries ?? []) {
-    valueByStockTake.set(e.stock_take_id, (valueByStockTake.get(e.stock_take_id) ?? 0) + Number(e.value));
-  }
+  const { stockTakes, valueByStockTake } = view.data;
 
   const drafts = (stockTakes ?? []).filter((s) => s.status === "draft");
   const submitted = (stockTakes ?? []).filter((s) => s.status === "submitted");
@@ -112,7 +109,7 @@ export default async function StockTakePage() {
                 <td className="px-4 py-2 text-muted-foreground">
                   {s.submitted_at ? formatDateTime(s.submitted_at) : "—"}
                 </td>
-                <td className="px-4 py-2">£{(valueByStockTake.get(s.id) ?? 0).toFixed(2)}</td>
+                <td className="px-4 py-2">£{(valueByStockTake[s.id] ?? 0).toFixed(2)}</td>
                 <td className="px-4 py-2 text-right">
                   {access("stocktake", "manage") && (
                     <ConfirmDeleteButton

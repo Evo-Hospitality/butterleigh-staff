@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { StockTake, StockTakeEntry, StockType } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
+import Loading from "../../loading";
+import { useStocktakeView } from "../data";
 import { formatDateOnly } from "@/lib/format";
 
 type Point = {
@@ -28,10 +31,10 @@ function shortMoney(n: number) {
 }
 
 // Plain inline SVG rather than a charting library — one chart in the whole
-// app doesn't justify a dependency, and this renders server-side with no
-// hydration cost. Points are spaced evenly by position rather than by real
-// date gaps: stocktakes are periodic, and true time-scaling would bunch
-// them up unreadably after a couple of catch-up counts.
+// app doesn't justify a dependency, and it's cheap to draw. Points are
+// spaced evenly by position rather than by real date gaps: stocktakes are
+// periodic, and true time-scaling would bunch them up unreadably after a
+// couple of catch-up counts.
 function ValueChart({ points }: { points: Point[] }) {
   const W = 620;
   const H = 240;
@@ -104,43 +107,15 @@ function ValueChart({ points }: { points: Point[] }) {
   );
 }
 
-export default async function StockValueReportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string }>;
-}) {
-  const { supabase } = await requireUser();
-  const params = await searchParams;
-  const type: StockType = params.type === "dry" ? "dry" : "wet";
+export default function StockValueReportPage() {
+  const typeParam = useSearchParams().get("type") ?? undefined;
+  const view = useStocktakeView("report", { type: typeParam });
+  if (!view.data) return <Loading />;
 
-  const { data: stockTakes } = await supabase
-    .from("stock_takes")
-    .select("*")
-    .eq("type", type)
-    .eq("status", "submitted")
-    .order("stock_date")
-    .returns<StockTake[]>();
-
-  const ids = (stockTakes ?? []).map((s) => s.id);
-  const { data: entries } = ids.length
-    ? await supabase
-        .from("stock_take_entries")
-        .select("stock_take_id, value")
-        .in("stock_take_id", ids)
-        .returns<Pick<StockTakeEntry, "stock_take_id" | "value">[]>()
-    : { data: [] as Pick<StockTakeEntry, "stock_take_id" | "value">[] };
-
-  const valueById = new Map<string, number>();
-  for (const e of entries ?? []) {
-    valueById.set(e.stock_take_id, (valueById.get(e.stock_take_id) ?? 0) + Number(e.value));
-  }
-
-  const points: Point[] = (stockTakes ?? []).map((s) => ({
-    id: s.id,
-    date: s.stock_date,
-    label: new Date(s.stock_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
-    submittedByName: s.submitted_by_name,
-    value: valueById.get(s.id) ?? 0,
+  const { type } = view.data;
+  const points: Point[] = view.data.points.map((p) => ({
+    ...p,
+    label: new Date(p.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
   }));
 
   // Newest first for the table; the chart reads left-to-right oldest-first.
@@ -163,7 +138,7 @@ export default async function StockValueReportPage({
 
       <div className="mb-6 flex gap-3 text-sm">
         {(["wet", "dry"] as const).map((t) => (
-          <a
+          <Link
             key={t}
             href={`/stocktake/report?type=${t}`}
             className={`rounded-md border px-3 py-1.5 capitalize ${
@@ -171,7 +146,7 @@ export default async function StockValueReportPage({
             }`}
           >
             {t}
-          </a>
+          </Link>
         ))}
       </div>
 

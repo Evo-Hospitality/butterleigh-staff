@@ -1,18 +1,14 @@
-import { requireAdmin } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+"use client";
+
+import Loading from "../../loading";
+import { usePeopleView } from "../people-data";
 import { OrgChartNode } from "./org-chart-node";
 
-export default async function OrgChartPage() {
-  const { supabase } = await requireAdmin();
+export default function OrgChartPage() {
+  const view = usePeopleView("orgChart");
+  if (!view.data) return <Loading />;
 
-  const { data: staff } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("active", true)
-    .order("full_name")
-    .returns<Profile[]>();
-
-  const people = staff ?? [];
+  const people = view.data.people;
   // "Root" = no manager, or their manager isn't in the active list (e.g.
   // archived) — either way, nothing above them to nest under.
   const roots = people.filter((p) => !p.manager_id || !people.some((m) => m.id === p.manager_id));

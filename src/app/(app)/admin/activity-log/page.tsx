@@ -1,6 +1,8 @@
-import { requireAdmin } from "@/lib/auth";
-import type { ImpersonationLogEntry } from "@/lib/types";
+"use client";
+
 import { formatDateTime } from "@/lib/format";
+import Loading from "../../loading";
+import { usePeopleView } from "../people-data";
 
 function formatDuration(startedAt: string, endedAt: string | null): string {
   if (!endedAt) return "still active";
@@ -12,14 +14,10 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
   return `${hours}h ${minutes % 60}m`;
 }
 
-export default async function ActivityLogPage() {
-  const { supabase } = await requireAdmin();
-
-  const { data: entries } = await supabase
-    .from("impersonation_log")
-    .select("*")
-    .order("started_at", { ascending: false })
-    .returns<ImpersonationLogEntry[]>();
+export default function ActivityLogPage() {
+  const view = usePeopleView("activityLog");
+  if (!view.data) return <Loading />;
+  const { entries } = view.data;
 
   return (
     <div>
@@ -39,7 +37,7 @@ export default async function ActivityLogPage() {
             </tr>
           </thead>
           <tbody>
-            {entries?.map((entry) => (
+            {entries.map((entry) => (
               <tr key={entry.id} className="border-t border-border">
                 <td className="px-4 py-2">{entry.admin_name}</td>
                 <td className="px-4 py-2">{entry.target_name}</td>
@@ -49,7 +47,7 @@ export default async function ActivityLogPage() {
                 <td className="px-4 py-2">{formatDuration(entry.started_at, entry.ended_at)}</td>
               </tr>
             ))}
-            {(!entries || entries.length === 0) && (
+            {entries.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">
                   No activity yet.

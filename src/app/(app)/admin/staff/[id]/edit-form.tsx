@@ -30,7 +30,7 @@ export function EditStaffForm({
   currentAdminId,
 }: {
   staff: Profile;
-  managers: Profile[];
+  managers: { id: string; full_name: string }[];
   currentAdminId: string;
 }) {
   const [employmentType, setEmploymentType] = useState(staff.employment_type);

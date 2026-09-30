@@ -1,39 +1,22 @@
+"use client";
+
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { requireMaintenanceAccess } from "@/lib/auth";
+import { useParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
 import { SubmitButton } from "@/components/submit-button";
-import type { MaintenanceRequest } from "@/lib/types";
+import Loading from "../../../loading";
+import { useMaintenanceView } from "../../data";
 import { editMaintenanceRequestAction } from "./actions";
 
-export default async function EditMaintenanceRequestPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, user, profile } = await requireMaintenanceAccess();
+export default function EditMaintenanceRequestPage() {
+  const { id } = useParams<{ id: string }>();
+  // The loader sends you back to the request if it isn't yours to edit or
+  // is already closed.
+  const view = useMaintenanceView("edit", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Request not found.</p>;
+  if (!view.data) return <Loading />;
 
-  const { data: request } = await supabase
-    .from("maintenance_requests")
-    .select("*")
-    .eq("id", id)
-    .single<MaintenanceRequest>();
-
-  if (!request) {
-    notFound();
-  }
-
-  // Mirrors edit_maintenance_request()'s own check — UX only; the RPC is
-  // the real boundary.
-  const canEdit =
-    request.submitted_by === user.id || request.assigned_to === user.id || profile.role === "admin";
-  if (!canEdit || request.status !== "open") {
-    redirect(`/maintenance/${id}`);
-  }
-
+  const request = view.data;
   const editBound = editMaintenanceRequestAction.bind(null, id);
 
   return (
@@ -44,9 +27,7 @@ export default async function EditMaintenanceRequestPage({
 
       <h1 className="mt-2 mb-6 text-2xl font-bold text-primary">Edit request</h1>
 
-      {error && (
-        <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError />
 
       <form action={editBound} className="flex max-w-md flex-col gap-4">
         <div>

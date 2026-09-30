@@ -1,26 +1,32 @@
+"use client";
+
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import type { StockTake } from "@/lib/types";
-import { buildStockTakeSheet } from "@/lib/stocktake/sheet";
+import { useParams } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useStocktakeView } from "../data";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { deleteSubmittedStockTakeAction } from "../actions";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 
-export default async function StockTakeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { supabase, access } = await requireUser();
-  const { id } = await params;
+export default function StockTakeDetailPage() {
+  const { access } = useMe()!;
+  const { id } = useParams<{ id: string }>();
+  const view = useStocktakeView("detail", { id });
 
-  const { data: stockTake } = await supabase.from("stock_takes").select("*").eq("id", id).single<StockTake>();
-  if (!stockTake) notFound();
-  if (stockTake.status === "draft") {
-    redirect(`/stocktake/${id}/edit`);
+  if (view.notFound) {
+    return (
+      <div>
+        <Link href="/stocktake" className="text-sm text-muted-foreground hover:text-accent">
+          &larr; Back to Stocktake
+        </Link>
+        <p className="mt-4 text-sm text-muted-foreground">Stocktake not found — it may have been deleted.</p>
+      </div>
+    );
   }
+  if (!view.data) return <Loading />;
 
-  const sheet = await buildStockTakeSheet(supabase, id);
-  if (!sheet) notFound();
-  const { locations: locationOrder, groups, grandTotal } = sheet;
-
+  const { stockTake, locations: locationOrder, groups, grandTotal } = view.data;
 
   return (
     <div>
@@ -80,7 +86,7 @@ export default async function StockTakeDetailPage({ params }: { params: Promise<
                     <td className="px-2 py-1.5">{entry.unit_price != null ? `£${entry.unit_price.toFixed(2)}` : "—"}</td>
                     {locationOrder.map((loc) => (
                       <td key={loc.key} className="px-2 py-1.5">
-                        {qs?.get(loc.key)?.toFixed(2) ?? "0.00"}
+                        {qs?.[loc.key]?.toFixed(2) ?? "0.00"}
                       </td>
                     ))}
                     <td className="px-2 py-1.5 text-muted-foreground">{entry.total_qty.toFixed(2)}</td>

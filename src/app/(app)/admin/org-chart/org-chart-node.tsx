@@ -1,7 +1,12 @@
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
 
-export function OrgChartNode({ person, people, depth }: { person: Profile; people: Profile[]; depth: number }) {
+export type OrgPerson = Pick<
+  Profile,
+  "id" | "full_name" | "manager_id" | "role" | "is_manager" | "employment_type"
+>;
+
+export function OrgChartNode({ person, people, depth }: { person: OrgPerson; people: OrgPerson[]; depth: number }) {
   const children = people.filter((p) => p.manager_id === person.id);
 
   return (

@@ -1,8 +1,15 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { useParams } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import { patchView, useSave } from "@/lib/client/save";
+import { PageError } from "@/components/page-error";
+import type { ViewData } from "@/lib/views/types";
+import type { views } from "@/lib/views/tasks";
+import Loading from "../../loading";
+import { useTasksView } from "../data";
 import { recurrenceLabel, isOverdue } from "@/lib/tasks/format";
-import type { Task, TaskReview } from "@/lib/types";
 import { completeTaskAction, reviewTaskAction } from "./actions";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -21,37 +28,37 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${style}`}>{label}</span>;
 }
 
-export default async function TaskDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, user, profile, access } = await requireUser();
+type DetailData = ViewData<typeof views, "detail">;
+type ListData = ViewData<typeof views, "list">;
 
-  const [{ data: task }, { data: reviews }] = await Promise.all([
-    supabase.from("tasks").select("*").eq("id", id).single<Task>(),
-    supabase
-      .from("task_reviews")
-      .select("*")
-      .eq("task_id", id)
-      .order("reviewed_at")
-      .returns<TaskReview[]>(),
-  ]);
+export default function TaskDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user, profile, access } = useMe()!;
+  const save = useSave();
+  const view = useTasksView("detail", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Task not found.</p>;
+  if (!view.data) return <Loading />;
 
-  if (!task) {
-    notFound();
-  }
+  const { task, reviews } = view.data;
 
   const canComplete = (task.assigned_to === user.id || profile.role === "admin") && task.status === "pending";
   const canReview =
     (task.created_by === user.id || profile.role === "admin") && task.status === "awaiting_review";
   const canEdit = task.created_by === user.id || profile.role === "admin";
 
-  const completeBound = completeTaskAction.bind(null, id);
+  // One tap: show it as awaiting review straight away (here and on the
+  // list) while the server catches up. A refusal comes back as the usual
+  // ?error= redirect, and the re-sync after it puts the status right.
+  const completeNow = async () => {
+    await save(() => completeTaskAction(id), {
+      optimistic: (qc) => {
+        const markComplete = <T extends { id: string; status: string }>(t: T): T =>
+          t.id === id ? ({ ...t, status: "awaiting_review" } as T) : t;
+        patchView<DetailData>(qc, "tasks", "detail", (d) => ({ ...d, task: markComplete(d.task) }));
+        patchView<ListData>(qc, "tasks", "list", (d) => ({ ...d, tasks: d.tasks.map(markComplete) }));
+      },
+    });
+  };
   const confirmDoneBound = reviewTaskAction.bind(null, id, "done");
   const sendBackBound = reviewTaskAction.bind(null, id, "sent_back");
 
@@ -82,9 +89,7 @@ export default async function TaskDetailPage({
         )}
       </p>
 
-      {error && (
-        <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError className="mb-4 max-w-lg" />
 
       {task.description && (
         <p className="mb-6 max-w-lg whitespace-pre-wrap text-sm">{task.description}</p>
@@ -97,7 +102,7 @@ export default async function TaskDetailPage({
       )}
 
       {canComplete && (
-        <form action={completeBound} className="mb-8">
+        <form action={completeNow} className="mb-8">
           <button
             type="submit"
             className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"

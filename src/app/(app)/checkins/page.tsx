@@ -1,11 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { requireCheckinsAccess } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { buildCheckinSummary, type SummaryLink } from "@/lib/checkins/summary";
-import { partitionAgenda } from "@/lib/checkins/agenda";
-import type { CheckinGroup, CheckinItem } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
+import type { SummaryLink } from "@/lib/checkins/summary";
 import { CollapsibleSection } from "@/components/collapsible-section";
-import { CheckinBoard, type BoardGroup } from "@/components/checkin-board";
+import { CheckinBoard } from "@/components/checkin-board";
+import Loading from "../loading";
+import { useCheckinsView } from "./data";
 import {
   addCheckinItemAction,
   deleteCheckinItemAction,
@@ -36,30 +37,11 @@ function SummaryList({ items, empty }: { items: SummaryLink[]; empty: string }) 
   );
 }
 
-export default async function CheckinsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ photoDays?: string }>;
-}) {
-  const { supabase, profile } = await requireCheckinsAccess();
-  const isAdmin = profile.role === "admin";
-  const params = await searchParams;
-  const photoDays = Math.max(1, Number(params.photoDays) || 7);
+export default function CheckinsPage() {
+  const view = useCheckinsView("overview", { photoDays: useSearchParams().get("photoDays") ?? undefined });
+  if (!view.data) return <Loading />;
 
-  const [summary, { data: groups }, { data: items }] = await Promise.all([
-    buildCheckinSummary(supabase, createAdminClient(), photoDays, isAdmin),
-    supabase
-      .from("checkin_groups")
-      .select("*")
-      .eq("active", true)
-      .order("sort_order")
-      .returns<CheckinGroup[]>(),
-    supabase.from("checkin_items").select("*").order("created_at").returns<CheckinItem[]>(),
-  ]);
-
-  // "Carried to next week" parks an item until UK midnight; anything whose
-  // deferral has since passed is simply open again.
-  const boardGroups: BoardGroup[] = partitionAgenda(groups ?? [], items ?? []);
+  const { isAdmin, photoDays, summary, boardGroups } = view.data;
 
   const sections: { key: keyof typeof summary; title: string; empty: string }[] = [
     // Admin-only, and first: both block someone — a new starter can't work
@@ -107,7 +89,7 @@ export default async function CheckinsPage({
                 <div className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">
                   <span className="text-muted-foreground">Show last</span>
                   {PHOTO_DAY_PRESETS.map((d) => (
-                    <a
+                    <Link
                       key={d}
                       href={`/checkins?photoDays=${d}`}
                       className={`rounded-md border px-2 py-1 ${
@@ -117,7 +99,7 @@ export default async function CheckinsPage({
                       }`}
                     >
                       {d} days
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}

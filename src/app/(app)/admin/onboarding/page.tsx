@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { useSearchParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
 import { formatDateTime } from "@/lib/format";
 import { formatSortCode } from "@/lib/bank-details";
-import { formatUkPhone } from "@/lib/phone";
-import type { BankChangeRequest, EmployeeDetails, Profile } from "@/lib/types";
+import Loading from "../../loading";
+import { usePeopleView } from "../people-data";
 import { decideBankChangeAction } from "./actions";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -13,35 +16,17 @@ const STATUS_LABEL: Record<string, string> = {
   approved: "Approved",
 };
 
-export default async function AdminOnboardingPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const { supabase } = await requireAdmin();
-  const params = await searchParams;
-
-  const [{ data: staff }, { data: details }, { data: bankRequests }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>(),
-    supabase.from("employee_details").select("*").returns<EmployeeDetails[]>(),
-    supabase
-      .from("bank_change_requests")
-      .select("*")
-      .eq("status", "pending")
-      .order("requested_at")
-      .returns<BankChangeRequest[]>(),
-  ]);
-
-  const detailsByStaff = new Map((details ?? []).map((d) => [d.staff_id, d]));
-  const all = staff ?? [];
-  const waiting = all.filter((p) => p.onboarding_status === "submitted");
-  const pendingBank = bankRequests ?? [];
+export default function AdminOnboardingPage() {
+  const params = useSearchParams();
+  const view = usePeopleView("onboardingList");
+  if (!view.data) return <Loading />;
+  const { waiting, pendingBank, everyone: all } = view.data;
 
   const notice =
-    (params.approved && "Approved — they've got full access now.") ||
-    (params.sentback && "Sent back with your note.") ||
-    (params.bankapproved && "Bank details updated.") ||
-    (params.bankrejected && "Bank change rejected — nothing was altered.") ||
+    (params.get("approved") && "Approved — they've got full access now.") ||
+    (params.get("sentback") && "Sent back with your note.") ||
+    (params.get("bankapproved") && "Bank details updated.") ||
+    (params.get("bankrejected") && "Bank change rejected — nothing was altered.") ||
     null;
 
   return (
@@ -54,9 +39,7 @@ export default async function AdminOnboardingPage({
       </p>
 
       {notice && <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
-      {params.error && (
-        <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
-      )}
+      <PageError className="mb-4" />
 
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-bold text-primary">Waiting for review ({waiting.length})</h2>
@@ -73,9 +56,7 @@ export default async function AdminOnboardingPage({
                   <p className="font-semibold">{person.full_name}</p>
                   <p className="text-xs text-muted-foreground">
                     Submitted{" "}
-                    {detailsByStaff.get(person.id)?.submitted_at
-                      ? formatDateTime(detailsByStaff.get(person.id)!.submitted_at!)
-                      : "—"}
+                    {person.submitted_at ? formatDateTime(person.submitted_at) : "—"}
                   </p>
                 </div>
                 <Link
@@ -108,7 +89,7 @@ export default async function AdminOnboardingPage({
                 <p className="font-semibold">{request.staff_name}</p>
                 <p className="mb-1 text-xs text-muted-foreground">
                   Requested {formatDateTime(request.requested_at)} · phone on file:{" "}
-                  {formatUkPhone(detailsByStaff.get(request.staff_id)?.mobile_phone) || "none"}
+                  {request.phoneOnFile || "none"}
                 </p>
                 <dl className="mb-3 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
                   <div>
@@ -178,8 +159,6 @@ export default async function AdminOnboardingPage({
             </thead>
             <tbody>
               {all.map((person) => {
-                const detail = detailsByStaff.get(person.id);
-                const complete = !!(detail?.home_address && detail?.ni_number && detail?.bank_account_number);
                 return (
                   <tr key={person.id} className="border-b border-border last:border-0">
                     <td className="py-2 pr-3 font-medium">{person.full_name}</td>
@@ -187,9 +166,9 @@ export default async function AdminOnboardingPage({
                       {STATUS_LABEL[person.onboarding_status] ?? person.onboarding_status}
                     </td>
                     <td className="py-2 pr-3">
-                      {complete ? (
+                      {person.details === "complete" ? (
                         <span className="text-green-700">Complete</span>
-                      ) : detail ? (
+                      ) : person.details === "partial" ? (
                         <span className="text-yellow-700">Partial</span>
                       ) : (
                         <span className="text-muted-foreground">None</span>
@@ -197,7 +176,7 @@ export default async function AdminOnboardingPage({
                     </td>
                     <td className="py-2 text-right">
                       <Link href={`/admin/onboarding/${person.id}`} className="text-accent hover:underline">
-                        {detail ? "View / edit" : "Add details"}
+                        {person.details !== "none" ? "View / edit" : "Add details"}
                       </Link>
                     </td>
                   </tr>

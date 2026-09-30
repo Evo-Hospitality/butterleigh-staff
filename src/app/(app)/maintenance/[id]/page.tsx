@@ -1,11 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireMaintenanceAccess } from "@/lib/auth";
-import type { MaintenanceRequest, MaintenanceUpdateEntry, Profile } from "@/lib/types";
-import { staffWithAppAccess } from "@/lib/access-query";
+import { useParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
+import Loading from "../../loading";
+import { useMaintenanceView } from "../data";
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/format";
 
 function StatusBadge({ status }: { status: string }) {
@@ -19,61 +20,19 @@ const KIND_LABEL: Record<string, string> = {
   status_changed: "Status change",
 };
 
-export default async function MaintenanceDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, user, profile } = await requireMaintenanceAccess();
+export default function MaintenanceDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const view = useMaintenanceView("detail", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Request not found.</p>;
+  if (!view.data) return <Loading />;
 
-  const [{ data: request }, { data: updates }] = await Promise.all([
-    supabase.from("maintenance_requests").select("*").eq("id", id).single<MaintenanceRequest>(),
-    supabase
-      .from("maintenance_updates")
-      .select("*")
-      .eq("request_id", id)
-      .order("created_at")
-      .returns<MaintenanceUpdateEntry[]>(),
-  ]);
-
-  if (!request) {
-    notFound();
-  }
-
-  const canManage = request.assigned_to === user.id || profile.role === "admin";
-  // Wider than canManage: whoever reported it can fix their own wording.
-  // Matches edit_maintenance_request()'s check.
-  const canEdit =
-    request.status === "open" &&
-    (request.submitted_by === user.id || request.assigned_to === user.id || profile.role === "admin");
-
-  let assignees: Profile[] = [];
-  if (canManage) {
-    // Admin client — a non-admin manager's own RLS-scoped session can't
-    // read an arbitrary other manager/admin's profile, only their own
-    // reports.
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("profiles")
-      .select("*")
-      .eq("active", true)
-      .order("full_name")
-      .returns<Profile[]>();
-    assignees = (await staffWithAppAccess(supabase, "maintenance", "manage")).filter(
-      (a) => a.id !== request.assigned_to,
-    );
-  }
+  const { request, updates, canManage, canEdit, canDelete, assignees } = view.data;
 
   const closeAction = setStatusAction.bind(null, id, "closed");
   const reopenAction = setStatusAction.bind(null, id, "open");
   const noteAction = addNoteAction.bind(null, id);
   const reassignBound = reassignAction.bind(null, id);
   const deleteBound = deleteRequestAction.bind(null, id);
-  const canDelete = profile.role === "admin" && request.status === "closed";
 
   return (
     <div>
@@ -97,9 +56,7 @@ export default async function MaintenanceDetailPage({
         )}
       </p>
 
-      {error && (
-        <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError className="mb-4 max-w-lg" />
 
       {request.description && (
         <p className="mb-4 max-w-lg whitespace-pre-wrap text-sm">{request.description}</p>
@@ -164,7 +121,7 @@ export default async function MaintenanceDetailPage({
 
       <h2 className="mb-3 text-lg font-bold text-primary">Log</h2>
       <div className="space-y-3">
-        {(updates ?? []).map((u) => (
+        {updates.map((u) => (
           <div key={u.id} className="rounded-md border border-border p-3 text-sm">
             <p className="mb-1 text-xs text-muted-foreground">
               {u.author_name} · {formatDateTime(u.created_at)}
@@ -173,7 +130,7 @@ export default async function MaintenanceDetailPage({
             <p>{u.note}</p>
           </div>
         ))}
-        {(!updates || updates.length === 0) && (
+        {updates.length === 0 && (
           <p className="text-sm text-muted-foreground">No updates yet.</p>
         )}
       </div>

@@ -1,31 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
-import type { EmployeeDetails, Profile } from "@/lib/types";
+import { useParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
+import Loading from "../../../loading";
+import { usePeopleView } from "../../people-data";
 import { EditStaffForm } from "./edit-form";
 
-export default async function EditStaffPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, user } = await requireAdmin();
-
-  const [{ data: staff }, { data: managers }, { data: details }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", id).single<Profile>(),
-    supabase.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>(),
-    supabase.from("employee_details").select("*").eq("staff_id", id).maybeSingle<EmployeeDetails>(),
-  ]);
-
-  if (!staff) {
-    notFound();
-  }
-
-  const hasDetails = !!(details?.home_address || details?.ni_number || details?.bank_account_number);
+export default function EditStaffPage() {
+  const { id } = useParams<{ id: string }>();
+  const view = usePeopleView("editStaff", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Staff member not found.</p>;
+  if (!view.data) return <Loading />;
+  const { staff, managers, hasDetails, currentAdminId } = view.data;
 
   return (
     <div>
@@ -51,10 +38,16 @@ export default async function EditStaffPage({
         </Link>
       </div>
 
-      {error && (
-        <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
-      <EditStaffForm staff={staff} managers={managers ?? []} currentAdminId={user.id} />
+      <PageError className="mb-4 max-w-lg" />
+      {/* Keyed on the saved record: the form's fields start from it, so if
+          the background refresh brings a newer copy than the cached one the
+          form is redrawn from that rather than saving stale values back. */}
+      <EditStaffForm
+        key={JSON.stringify(staff)}
+        staff={staff}
+        managers={managers}
+        currentAdminId={currentAdminId}
+      />
     </div>
   );
 }

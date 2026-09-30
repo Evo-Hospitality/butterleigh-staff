@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { TaskReview } from "@/lib/types";
+import type { TaskHistoryRow as HistoryRow } from "@/lib/views/tasks";
+import Loading from "../../loading";
+import { useTasksView } from "../data";
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -9,15 +12,6 @@ function startOfWeek(date: Date): Date {
   d.setDate(d.getDate() - day);
   return d;
 }
-
-function startOfMonth(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(1);
-  return d;
-}
-
-type HistoryRow = TaskReview & { tasks: { title: string } | null };
 
 function HistoryGroup({ title, items }: { title: string; items: HistoryRow[] }) {
   return (
@@ -45,18 +39,10 @@ function HistoryGroup({ title, items }: { title: string; items: HistoryRow[] }) 
   );
 }
 
-export default async function TaskHistoryPage() {
-  const { supabase } = await requireUser();
-
-  const monthStart = startOfMonth(new Date());
-
-  const { data: reviews } = await supabase
-    .from("task_reviews")
-    .select("*, tasks(title)")
-    .eq("outcome", "done")
-    .gte("reviewed_at", monthStart.toISOString())
-    .order("reviewed_at", { ascending: false })
-    .returns<HistoryRow[]>();
+export default function TaskHistoryPage() {
+  const view = useTasksView("history");
+  if (!view.data) return <Loading />;
+  const reviews = view.data.reviews;
 
   const now = new Date();
   const weekStart = startOfWeek(now);
@@ -67,7 +53,7 @@ export default async function TaskHistoryPage() {
   const lastWeek: HistoryRow[] = [];
   const earlierThisMonth: HistoryRow[] = [];
 
-  for (const r of reviews ?? []) {
+  for (const r of reviews) {
     const at = new Date(r.reviewed_at);
     if (at >= weekStart) thisWeek.push(r);
     else if (at >= lastWeekStart) lastWeek.push(r);

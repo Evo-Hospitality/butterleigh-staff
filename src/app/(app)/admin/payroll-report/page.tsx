@@ -1,24 +1,24 @@
-import { requireAdmin } from "@/lib/auth";
-import { buildPayrollReport } from "@/lib/holiday/payroll-report";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default async function PayrollReportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ year?: string; month?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const params = await searchParams;
-
+export default function PayrollReportPage() {
+  const params = useSearchParams();
   const now = new Date();
-  const year = Number(params.year) || now.getFullYear();
-  const month = Number(params.month) || now.getMonth() + 1;
+  const year = Number(params.get("year")) || now.getFullYear();
+  const month = Number(params.get("month")) || now.getMonth() + 1;
 
-  const rows = await buildPayrollReport(supabase, year, month);
+  const view = useSettingsView("payrollReport", { year: String(year), month: String(month) });
+  if (!view.data) return <Loading />;
+
+  const { rows } = view.data;
 
   return (
     <div>

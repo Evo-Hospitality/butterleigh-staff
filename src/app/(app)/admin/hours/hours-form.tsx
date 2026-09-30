@@ -10,7 +10,7 @@ export function HoursForm({
   year,
   month,
 }: {
-  staff: Profile[];
+  staff: Pick<Profile, "id" | "full_name">[];
   initialHours: Map<string, number>;
   year: number;
   month: number;

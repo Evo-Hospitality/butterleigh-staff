@@ -1,14 +1,14 @@
-import { requireAdmin } from "@/lib/auth";
-import { staffWithAppAccess } from "@/lib/access-query";
+"use client";
+
 import { saveMaintenanceSettingsAction } from "./actions";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
-export default async function MaintenanceSettingsPage() {
-  const { supabase } = await requireAdmin();
+export default function MaintenanceSettingsPage() {
+  const view = useSettingsView("maintenanceSettings");
+  if (!view.data) return <Loading />;
 
-  const [{ data: settings }, staff] = await Promise.all([
-    supabase.from("settings").select("default_maintenance_assignee_id").single(),
-    staffWithAppAccess(supabase, "maintenance", "manage"),
-  ]);
+  const { assigneeId, staff } = view.data;
 
   return (
     <div>
@@ -19,16 +19,17 @@ export default async function MaintenanceSettingsPage() {
         assign it to themselves, regardless of this setting.
       </p>
 
-      <form action={saveMaintenanceSettingsAction} className="flex max-w-md items-end gap-3">
+      {/* Keyed by the saved value so the picker shows it after a save. */}
+      <form key={assigneeId} action={saveMaintenanceSettingsAction} className="flex max-w-md items-end gap-3">
         <div className="flex-1">
           <label className="mb-1 block text-sm font-medium">Default assignee</label>
           <select
             name="default_maintenance_assignee_id"
-            defaultValue={settings?.default_maintenance_assignee_id ?? ""}
+            defaultValue={assigneeId}
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           >
             <option value="">No default — route to any admin</option>
-            {(staff ?? []).map((s) => (
+            {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name}
               </option>

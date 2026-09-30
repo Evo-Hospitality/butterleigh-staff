@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { useMe } from "@/lib/client/me";
+import { PageError } from "@/components/page-error";
+import Loading from "../loading";
+import { useTasksView } from "./data";
 import { recurrenceLabel, isOverdue } from "@/lib/tasks/format";
 import type { Task } from "@/lib/types";
 import { formatDate } from "@/lib/format";
@@ -78,25 +83,14 @@ function TaskList({
   );
 }
 
-export default async function TasksPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-  const { supabase, user, profile, access } = await requireUser();
+export default function TasksPage() {
+  const { user, profile, access } = useMe()!;
+  const view = useTasksView("list");
+  if (!view.data) return <Loading />;
+
   const canDelete = profile.role === "admin";
   const canUseActions = access("actions");
-
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("is_active", true)
-    .neq("status", "done")
-    .order("created_at", { ascending: false })
-    .returns<Task[]>();
-
-  const all = tasks ?? [];
+  const all = view.data.tasks;
 
   const needsAttention = all.filter(
     (t) =>
@@ -127,7 +121,7 @@ export default async function TasksPage({
         </div>
       </div>
 
-      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <PageError className="mb-4" />
 
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
         Tasks are things that need doing at the pub, usually during a shift, by someone on the

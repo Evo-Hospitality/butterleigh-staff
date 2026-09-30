@@ -1,39 +1,22 @@
+"use client";
+
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { requireActionItemsAccess } from "@/lib/auth";
+import { useParams } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
-import type { ActionItem } from "@/lib/types";
+import { PageError } from "@/components/page-error";
+import Loading from "../../../loading";
+import { useActionsView } from "../../data";
 import { editActionAction } from "./actions";
 
-export default async function EditActionPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, user, profile } = await requireActionItemsAccess();
+export default function EditActionPage() {
+  const { id } = useParams<{ id: string }>();
+  // The loader sends anyone who can't edit this (or once it's closed) back
+  // to the Action itself.
+  const view = useActionsView("edit", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Action not found.</p>;
+  if (!view.data) return <Loading />;
 
-  const { data: action } = await supabase
-    .from("action_items")
-    .select("*")
-    .eq("id", id)
-    .single<ActionItem>();
-
-  if (!action) {
-    notFound();
-  }
-
-  // Mirrors edit_action_item()'s own check — this is for the UX (don't show
-  // a form that's going to be refused); the RPC is the real boundary.
-  const canEdit =
-    action.submitted_by === user.id || action.assigned_to === user.id || profile.role === "admin";
-  if (!canEdit || action.status !== "open") {
-    redirect(`/actions/${id}`);
-  }
-
+  const action = view.data;
   const editBound = editActionAction.bind(null, id);
 
   return (
@@ -44,9 +27,7 @@ export default async function EditActionPage({
 
       <h1 className="mt-2 mb-6 text-2xl font-bold text-primary">Edit Action</h1>
 
-      {error && (
-        <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError />
 
       <form action={editBound} className="flex max-w-md flex-col gap-4">
         <div>

@@ -1,52 +1,93 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { SocialPhoto, SocialPhotoComment, SocialPhotoPost } from "@/lib/types";
+import { useState } from "react";
+import { useMe } from "@/lib/client/me";
+import { patchView, useSave } from "@/lib/client/save";
+import { PageError } from "@/components/page-error";
 import { SubmitButton } from "@/components/submit-button";
 import { DeleteSocialPhotoPostButton } from "@/components/delete-social-photo-post-button";
 import { SocialPhotoIncentive } from "@/components/social-photo-incentive";
+import type { SocialPhotoItem, views } from "@/lib/views/social-photos";
+import type { ViewData } from "@/lib/views/types";
+import Loading from "../loading";
+import { useSocialPhotosView } from "./data";
 import { addCommentAction, deleteCommentAction, deletePostAction, toggleUsedAction } from "./actions";
 import { formatDateTime } from "@/lib/format";
 
-export default async function SocialPhotosPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { supabase, profile, access } = await requireUser();
-  const { error } = await searchParams;
+type Feed = ViewData<typeof views, "feed">;
 
-  const [{ data: posts }, { data: photos }, { data: comments }] = await Promise.all([
-    supabase
-      .from("social_photo_posts")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .returns<SocialPhotoPost[]>(),
-    supabase.from("social_photos").select("*").order("sort_order").returns<SocialPhoto[]>(),
-    supabase
-      .from("social_photo_comments")
-      .select("*")
-      .order("created_at")
-      .returns<SocialPhotoComment[]>(),
-  ]);
+// Mark used / Undo flips the tick straight away and saves in the background;
+// set_photo_used() still does the real permission check, and a refusal puts
+// the tick back.
+function ToggleUsedButton({ photo }: { photo: SocialPhotoItem }) {
+  const save = useSave();
+  const target = !photo.used_for_socials;
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        save(() => toggleUsedAction(photo.id, target), {
+          optimistic: (qc) =>
+            patchView<Feed>(qc, "social-photos", "feed", (d) => ({
+              ...d,
+              photosByPost: {
+                ...d.photosByPost,
+                [photo.post_id]: (d.photosByPost[photo.post_id] ?? []).map((p) =>
+                  p.id === photo.id ? { ...p, used_for_socials: target } : p,
+                ),
+              },
+            })),
+        })
+      }
+      className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium hover:border-accent"
+    >
+      {photo.used_for_socials ? "Undo" : "Mark used"}
+    </button>
+  );
+}
+
+// The token stops a double-tap posting the comment twice. It lasts for this
+// visit to the page and is swapped for a fresh one once a comment lands, so
+// a second, deliberate comment on the same post still goes through.
+function CommentForm({ postId }: { postId: string }) {
+  const [token, setToken] = useState(() => crypto.randomUUID());
+  return (
+    <form
+      action={async (formData) => {
+        await addCommentAction(postId, formData);
+        setToken(crypto.randomUUID());
+      }}
+      className="flex items-start gap-2"
+    >
+      <input type="hidden" name="submission_token" value={token} />
+      <textarea
+        name="body"
+        required
+        rows={1}
+        maxLength={2000}
+        placeholder="Add a comment…"
+        className="min-h-9 flex-1 rounded-md border border-border px-3 py-1.5 text-sm"
+      />
+      <SubmitButton
+        pendingLabel="Posting…"
+        className="rounded-md border border-accent px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent hover:text-white disabled:opacity-50"
+      >
+        Comment
+      </SubmitButton>
+    </form>
+  );
+}
+
+export default function SocialPhotosPage() {
+  const { profile, access, isAdmin } = useMe()!;
+  const view = useSocialPhotosView("feed");
+  if (!view.data) return <Loading />;
+  const { posts, photosByPost, commentsByPost } = view.data;
 
   // Manage on Social photos, same as every other app. Real enforcement is
   // inside set_photo_used() regardless.
   const canMark = access("social_photos", "manage");
-
-  const photosByPost = new Map<string, SocialPhoto[]>();
-  for (const photo of photos ?? []) {
-    const list = photosByPost.get(photo.post_id) ?? [];
-    list.push(photo);
-    photosByPost.set(photo.post_id, list);
-  }
-
-  const commentsByPost = new Map<string, SocialPhotoComment[]>();
-  for (const comment of comments ?? []) {
-    const list = commentsByPost.get(comment.post_id) ?? [];
-    list.push(comment);
-    commentsByPost.set(comment.post_id, list);
-  }
-  const isAdmin = profile.role === "admin";
 
   return (
     <div>
@@ -62,16 +103,13 @@ export default async function SocialPhotosPage({
 
       <SocialPhotoIncentive />
 
-      {error && (
-        <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError className="mb-4 max-w-lg" />
 
       <div className="flex flex-col gap-6">
-        {(posts ?? []).map((post) => {
-          const postPhotos = photosByPost.get(post.id) ?? [];
+        {posts.map((post) => {
+          const postPhotos = photosByPost[post.id] ?? [];
           const deleteAction = deletePostAction.bind(null, post.id);
-          const postComments = commentsByPost.get(post.id) ?? [];
-          const commentAction = addCommentAction.bind(null, post.id);
+          const postComments = commentsByPost[post.id] ?? [];
           return (
             <div key={post.id} className="rounded-lg border border-border p-4">
               <div className="mb-1 flex items-start justify-between gap-3">
@@ -83,7 +121,6 @@ export default async function SocialPhotosPage({
               {post.caption && <p className="mb-3 text-sm">{post.caption}</p>}
               <div className="flex flex-wrap gap-3">
                 {postPhotos.map((photo) => {
-                  const toggleAction = toggleUsedAction.bind(null, photo.id, !photo.used_for_socials);
                   return (
                     <div key={photo.id} className="w-32">
                       <div className="relative">
@@ -107,14 +144,7 @@ export default async function SocialPhotosPage({
                           >
                             Download
                           </a>
-                          <form action={toggleAction}>
-                            <button
-                              type="submit"
-                              className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium hover:border-accent"
-                            >
-                              {photo.used_for_socials ? "Undo" : "Mark used"}
-                            </button>
-                          </form>
+                          <ToggleUsedButton photo={photo} />
                         </div>
                       )}
                     </div>
@@ -145,28 +175,12 @@ export default async function SocialPhotosPage({
                     ))}
                   </ul>
                 )}
-                <form action={commentAction} className="flex items-start gap-2">
-                  <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
-                  <textarea
-                    name="body"
-                    required
-                    rows={1}
-                    maxLength={2000}
-                    placeholder="Add a comment…"
-                    className="min-h-9 flex-1 rounded-md border border-border px-3 py-1.5 text-sm"
-                  />
-                  <SubmitButton
-                    pendingLabel="Posting…"
-                    className="rounded-md border border-accent px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent hover:text-white disabled:opacity-50"
-                  >
-                    Comment
-                  </SubmitButton>
-                </form>
+                <CommentForm postId={post.id} />
               </div>
             </div>
           );
         })}
-        {(posts ?? []).length === 0 && <p className="text-sm text-muted-foreground">No photos submitted yet.</p>}
+        {posts.length === 0 && <p className="text-sm text-muted-foreground">No photos submitted yet.</p>}
       </div>
     </div>
   );

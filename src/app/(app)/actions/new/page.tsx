@@ -1,35 +1,48 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { requireActionItemsAccess } from "@/lib/auth";
-import { isManagerOrAdmin, type Profile } from "@/lib/types";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { useSearchParams } from "next/navigation";
 import { SubmitButton } from "@/components/submit-button";
+import { SubmissionToken } from "@/components/submission-token";
+import { PageError } from "@/components/page-error";
+import { isRedirect } from "@/lib/client/save";
+import Loading from "../../loading";
+import { useActionsView } from "../data";
 import { createActionAction, createActionAndAnotherAction } from "./actions";
 
-export default async function NewActionPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; created?: string }>;
-}) {
-  await requireActionItemsAccess();
-  const { error, created } = await searchParams;
+export default function NewActionPage() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const created = searchParams.get("created");
+  // Bumped after each "Save & add another" so the form starts empty with a
+  // fresh submission token — landing back on /actions/new?created=1 from
+  // /actions/new?created=1 wouldn't remount the page on its own, and a
+  // reused token would quietly fold the next Action into the last one.
+  const [round, setRound] = useState(0);
+  const view = useActionsView("newForm");
+  if (!view.data) return <Loading />;
 
-  // Everyone who can reach this page is already a manager/admin, so the
-  // "Assign to" dropdown always shows — unlike Maintenance, there's no
-  // auto-routing branch for regular staff. Uses the admin client rather
-  // than the caller's own — profiles' own RLS only lets a non-admin
-  // manager see themselves and their direct reports, not the wider
-  // manager/admin pool this dropdown needs (same reasoning as
-  // lib/maintenance/routing.ts's resolveDefaultAssignee()).
-  const admin = createAdminClient();
-  const { data } = await admin.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>();
-  const assignees = (data ?? []).filter(isManagerOrAdmin);
+  // Everyone who can reach this page is already a manager/admin (the
+  // loader checks), so the "Assign to" dropdown always shows.
+  const { assignees } = view.data;
+
+  const saveAndAddAnother = async (formData: FormData) => {
+    try {
+      await createActionAndAnotherAction(formData);
+    } catch (err) {
+      // Only once it's saved — an ?error= redirect keeps what was typed
+      // (and the token, since nothing was created).
+      const digest = String((err as { digest?: unknown } | null)?.digest ?? "");
+      if (isRedirect(err) && !digest.includes("error=")) setRound((r) => r + 1);
+      throw err;
+    }
+  };
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold text-primary">Raise an Action</h1>
-      {error && (
-        <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError />
       {created && !error && (
         <p className="mb-4 max-w-md rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
           Action raised. Add another below, or{" "}
@@ -41,13 +54,14 @@ export default async function NewActionPage({
       )}
 
       <form
+        key={round}
         action={createActionAction}
         encType="multipart/form-data"
         className="flex max-w-md flex-col gap-4"
       >
-        {/* Fresh per render, so both presses of one button carry the same
+        {/* One per form, so both presses of one button carry the same
             value and the second is rejected as a duplicate server-side. */}
-        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
+        <SubmissionToken />
 
         <div>
           <label className="mb-1 block text-sm font-medium">Title</label>
@@ -98,7 +112,7 @@ export default async function NewActionPage({
         <div className="flex flex-wrap gap-2">
           <SubmitButton pendingLabel="Submitting…">Submit</SubmitButton>
           <SubmitButton
-            formAction={createActionAndAnotherAction}
+            formAction={saveAndAddAnother}
             pendingLabel="Saving…"
             className="self-start rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
           >

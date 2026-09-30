@@ -1,7 +1,8 @@
-import { requireAdmin } from "@/lib/auth";
-import type { Profile, MonthlyHoursEntry } from "@/lib/types";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import { HoursForm } from "./hours-form";
-import { HoursImportPanel, type ImportRow, type UnmatchedRow } from "@/components/hours-import-panel";
+import { HoursImportPanel } from "@/components/hours-import-panel";
 import {
   commitTimeEntriesAction,
   deleteHoursImportAction,
@@ -10,68 +11,25 @@ import {
   previewTimeEntriesAction,
   recheckUnmatchedAction,
 } from "./import-actions";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default async function MonthlyHoursPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ year?: string; month?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const params = await searchParams;
-
+export default function MonthlyHoursPage() {
+  const params = useSearchParams();
   const now = new Date();
-  const year = Number(params.year) || now.getFullYear();
-  const month = Number(params.month) || now.getMonth() + 1;
+  const year = Number(params.get("year")) || now.getFullYear();
+  const month = Number(params.get("month")) || now.getMonth() + 1;
 
-  const [{ data: staff }, { data: entries }, { data: allStaff }, { data: imports }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("employment_type", "hourly")
-      .eq("active", true)
-      .order("full_name")
-      .returns<Profile[]>(),
-    supabase
-      .from("monthly_hours")
-      .select("*")
-      .eq("year", year)
-      .eq("month", month)
-      .returns<MonthlyHoursEntry[]>(),
-    // The link dropdown needs everyone, not just hourly staff — the name
-    // that didn't match might belong to a salaried manager.
-    supabase.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>(),
-    supabase
-      .from("hours_imports")
-      .select("*, hours_import_unmatched(*)")
-      .eq("year", year)
-      .eq("month", month)
-      .order("created_at", { ascending: false }),
-  ]);
+  const view = useSettingsView("hours", { year: String(year), month: String(month) });
+  if (!view.data) return <Loading />;
 
-  const entryByStaff = new Map(entries?.map((e) => [e.staff_id, e]));
+  const { staff, allStaff, initialHours, imports: importRows } = view.data;
   const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`;
-
-  const importRows: ImportRow[] = (imports ?? []).map((imp) => ({
-    id: imp.id,
-    filename: imp.filename,
-    period_start: imp.period_start,
-    period_end: imp.period_end,
-    entry_count: imp.entry_count,
-    matched_count: imp.matched_count,
-    skipped_salaried: imp.skipped_salaried,
-    excluded_count: imp.excluded_count ?? 0,
-    total_hours: imp.total_hours,
-    imported_by_name: imp.imported_by_name,
-    created_at: imp.created_at,
-    unmatched: ((imp.hours_import_unmatched ?? []) as UnmatchedRow[]).sort((a, b) =>
-      a.display_name.localeCompare(b.display_name),
-    ),
-  }));
 
   return (
     <div>
@@ -103,11 +61,12 @@ export default async function MonthlyHoursPage({
       </div>
 
       <HoursImportPanel
+        key={`${year}-${month}`}
         year={year}
         month={month}
         monthLabel={monthLabel}
         imports={importRows}
-        staff={allStaff ?? []}
+        staff={allStaff}
         previewAction={previewTimeEntriesAction}
         commitAction={commitTimeEntriesAction}
         deleteAction={deleteHoursImportAction}
@@ -116,11 +75,13 @@ export default async function MonthlyHoursPage({
         recheckAction={recheckUnmatchedAction}
       />
 
+      {/* Keyed by month and the saved figures: a month switch or an import
+          landing resets the boxes, but a background refresh that finds
+          nothing changed leaves what's being typed alone. */}
       <HoursForm
-        staff={staff ?? []}
-        initialHours={new Map((staff ?? []).map((s) => [s.id, entryByStaff.get(s.id)?.hours_worked]).filter(
-          (pair): pair is [string, number] => pair[1] !== undefined,
-        ))}
+        key={`${year}-${month}-${JSON.stringify(initialHours)}`}
+        staff={staff}
+        initialHours={new Map(Object.entries(initialHours))}
         year={year}
         month={month}
       />

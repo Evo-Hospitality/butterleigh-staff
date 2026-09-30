@@ -1,22 +1,17 @@
-import { requireAdmin } from "@/lib/auth";
-import type { StockLocation, StockType } from "@/lib/types";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import type { StockType } from "@/lib/types";
 import { addStockLocation, deleteStockLocation } from "./actions";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
-export default async function StockLocationsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const params = await searchParams;
-  const type: StockType = params.type === "dry" ? "dry" : "wet";
+export default function StockLocationsPage() {
+  const type: StockType = useSearchParams().get("type") === "dry" ? "dry" : "wet";
+  const view = useSettingsView("stockLocations", { type });
+  if (!view.data) return <Loading />;
 
-  const { data: locations } = await supabase
-    .from("stock_locations")
-    .select("*")
-    .eq("type", type)
-    .order("sort_order")
-    .returns<StockLocation[]>();
+  const { locations } = view.data;
 
   const addAction = addStockLocation.bind(null, type);
 
@@ -69,7 +64,7 @@ export default async function StockLocationsPage({
             </tr>
           </thead>
           <tbody>
-            {locations?.map((l) => (
+            {locations.map((l) => (
               <tr key={l.id} className="border-t border-border">
                 <td className="px-4 py-2">{l.name}</td>
                 <td className="px-4 py-2 text-right">
@@ -81,7 +76,7 @@ export default async function StockLocationsPage({
                 </td>
               </tr>
             ))}
-            {(!locations || locations.length === 0) && (
+            {locations.length === 0 && (
               <tr>
                 <td colSpan={2} className="px-4 py-4 text-center text-muted-foreground">
                   No {type} locations yet.

@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireActionItemsAccess } from "@/lib/auth";
-import { isManagerOrAdmin, type ActionItem, type ActionItemUpdateEntry, type Profile } from "@/lib/types";
+import { useParams } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import { PageError } from "@/components/page-error";
+import Loading from "../../loading";
+import { useActionsView } from "../data";
 import { addNoteAction, deleteActionAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteActionButton } from "./delete-button";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
 import { moveActionToTaskAction } from "../move-actions";
@@ -20,30 +23,16 @@ const KIND_LABEL: Record<string, string> = {
   status_changed: "Status change",
 };
 
-export default async function ActionDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, user, profile } = await requireActionItemsAccess();
+export default function ActionDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user, profile } = useMe()!;
+  const view = useActionsView("detail", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Action not found.</p>;
+  if (!view.data) return <Loading />;
 
-  const [{ data: action }, { data: updates }] = await Promise.all([
-    supabase.from("action_items").select("*").eq("id", id).single<ActionItem>(),
-    supabase
-      .from("action_item_updates")
-      .select("*")
-      .eq("action_id", id)
-      .order("created_at")
-      .returns<ActionItemUpdateEntry[]>(),
-  ]);
-
-  if (!action) {
-    notFound();
-  }
+  // The reassign list comes from the loader, which only fetches it for
+  // someone who can manage this Action (same test as below).
+  const { action, updates, assignees } = view.data;
 
   const canManage = action.assigned_to === user.id || profile.role === "admin";
   // Wider than canManage: the raiser can fix their own wording even though
@@ -51,21 +40,6 @@ export default async function ActionDetailPage({
   const canEdit =
     action.status === "open" &&
     (action.submitted_by === user.id || action.assigned_to === user.id || profile.role === "admin");
-
-  let assignees: Profile[] = [];
-  if (canManage) {
-    // Admin client — a non-admin manager's own RLS-scoped session can't
-    // read an arbitrary other manager/admin's profile, only their own
-    // reports (same reasoning as the "Assign to" dropdown on /actions/new).
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("profiles")
-      .select("*")
-      .eq("active", true)
-      .order("full_name")
-      .returns<Profile[]>();
-    assignees = (data ?? []).filter((a) => isManagerOrAdmin(a) && a.id !== action.assigned_to);
-  }
 
   const closeAction = setStatusAction.bind(null, id, "closed");
   const reopenAction = setStatusAction.bind(null, id, "open");
@@ -106,9 +80,7 @@ export default async function ActionDetailPage({
         )}
       </p>
 
-      {error && (
-        <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError className="mb-4 max-w-lg" />
 
       {action.notes && (
         <p className="mb-4 max-w-lg whitespace-pre-wrap text-sm">{action.notes}</p>
@@ -187,7 +159,7 @@ export default async function ActionDetailPage({
 
       <h2 className="mb-3 text-lg font-bold text-primary">Log</h2>
       <div className="space-y-3">
-        {(updates ?? []).map((u) => (
+        {updates.map((u) => (
           <div key={u.id} className="rounded-md border border-border p-3 text-sm">
             <p className="mb-1 text-xs text-muted-foreground">
               {u.author_name} · {formatDateTime(u.created_at)}
@@ -196,7 +168,7 @@ export default async function ActionDetailPage({
             <p>{u.note}</p>
           </div>
         ))}
-        {(!updates || updates.length === 0) && (
+        {updates.length === 0 && (
           <p className="text-sm text-muted-foreground">No updates yet.</p>
         )}
       </div>

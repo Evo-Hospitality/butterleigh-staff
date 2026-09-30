@@ -1,43 +1,22 @@
+"use client";
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
-import type { Profile, LeaveBalance } from "@/lib/types";
-import { effectiveAllowance, remainingBalance } from "@/lib/holiday/balance";
+import { useSearchParams } from "next/navigation";
+import type { BalanceRow } from "@/lib/views/admin-settings";
 import { saveBalances } from "./actions";
 import { formatDateOnly } from "@/lib/format";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
-export default async function BalancesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ year?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const params = await searchParams;
-  const year = Number(params.year) || new Date().getFullYear();
+export default function BalancesPage() {
+  const year = Number(useSearchParams().get("year")) || new Date().getFullYear();
+  const view = useSettingsView("balances", { year: String(year) });
+  if (!view.data) return <Loading />;
 
-  const [{ data: staff }, { data: balances }] = await Promise.all([
-    // Everyone, archived included — a leaver's holiday still has to be
-    // explained (and often paid out), so they stay visible in their own
-    // section at the bottom rather than disappearing.
-    supabase.from("profiles").select("*").order("full_name").returns<Profile[]>(),
-    supabase.from("leave_balances").select("*").eq("leave_year", year).returns<LeaveBalance[]>(),
-  ]);
+  const { active: activeStaff, archived: archivedStaff } = view.data;
 
-  const balanceByStaff = new Map(balances?.map((b) => [b.staff_id, b]));
-  const activeStaff = (staff ?? []).filter((p) => p.active);
-  // Only leavers who actually have a position in this year — otherwise every
-  // year would list everyone who has ever left.
-  const archivedStaff = (staff ?? []).filter((p) => !p.active && balanceByStaff.has(p.id));
-
-  const renderRow = (person: Profile) => {
-    const bal = balanceByStaff.get(person.id);
-    const isSalaried = person.employment_type === "salaried";
-    const broughtForward = bal?.brought_forward ?? 0;
-    const baseAllowance = effectiveAllowance(person, bal, year);
-    const lieu = bal?.lieu_days_earned ?? 0;
-    const accruedHours = bal?.accrued_hours ?? 0;
-    const usedDays = bal?.used_days ?? 0;
-    const usedHours = bal?.used_hours ?? 0;
-    const remaining = remainingBalance(person, bal, year);
+  const renderRow = (person: BalanceRow) => {
+    const { isSalaried, broughtForward, baseAllowance, lieu, accruedHours, usedDays, usedHours, remaining } = person;
 
     return (
       <tr key={person.id} className="border-t border-border">
@@ -46,7 +25,7 @@ export default async function BalancesPage({
             href={`/admin/balances/${person.id}?year=${year}`}
             className="text-primary underline decoration-border underline-offset-2 hover:decoration-accent"
           >
-            {person.full_name}
+            {person.fullName}
           </Link>
         </td>
         <td className="px-4 py-2">
@@ -68,9 +47,9 @@ export default async function BalancesPage({
                 defaultValue={baseAllowance}
                 className="w-24 rounded-md border border-border px-2 py-1"
               />
-              {!bal && person.start_date && new Date(person.start_date).getFullYear() === year && (
+              {person.proRatedFrom && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  pro-rated from {person.annual_allowance_days} (started {formatDateOnly(person.start_date)})
+                  pro-rated from {person.proRatedFrom.annual} (started {formatDateOnly(person.proRatedFrom.startDate)})
                 </p>
               )}
             </>
@@ -166,7 +145,9 @@ export default async function BalancesPage({
         </Link>
       </div>
 
-      <form action={saveBalances}>
+      {/* Keyed by year so the defaultValue inputs start afresh on a year
+          switch, but a background refresh never wipes what's being typed. */}
+      <form key={year} action={saveBalances}>
         <input type="hidden" name="year" value={year} />
 
         <p className="mb-2 text-xs text-muted-foreground">

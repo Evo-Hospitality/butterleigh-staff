@@ -1,31 +1,30 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import { isManagerOrAdmin, type SopBlock, type SopEntry } from "@/lib/types";
+import { useParams, useSearchParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
 import { SopBlockEditor, type InitialBlock } from "@/components/sop-block-editor";
+import Loading from "../../loading";
+import { useSopsView } from "../data";
 import { publishAction, saveDraftAction } from "./actions";
 
-export default async function SopDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; edit?: string }>;
-}) {
-  const { id } = await params;
-  const { error, edit } = await searchParams;
-  const { supabase, profile } = await requireUser();
-
-  const { data: entry } = await supabase
-    .from("sop_entries")
-    .select("*")
-    .eq("id", id)
-    .single<SopEntry>();
-  if (!entry) {
-    notFound();
+export default function SopDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const edit = useSearchParams().get("edit");
+  const view = useSopsView("detail", { id });
+  if (view.notFound) {
+    return (
+      <div>
+        <Link href="/sops" className="text-sm text-muted-foreground hover:text-accent">
+          &larr; Back to SOPs
+        </Link>
+        <p className="mt-2 text-sm text-muted-foreground">This SOP couldn&apos;t be found — it may have been deleted.</p>
+      </div>
+    );
   }
+  if (!view.data) return <Loading />;
 
-  const canManage = isManagerOrAdmin(profile);
+  const { entry, canManage, blocks } = view.data;
   const isEditing = entry.status !== "answered" || edit === "1";
 
   if (isEditing) {
@@ -44,13 +43,7 @@ export default async function SopDetailPage({
       );
     }
 
-    const { data: existingBlocks } = await supabase
-      .from("sop_blocks")
-      .select("*")
-      .eq("entry_id", id)
-      .order("sort_order")
-      .returns<SopBlock[]>();
-    const initialBlocks: InitialBlock[] = (existingBlocks ?? []).map((b) => ({
+    const initialBlocks: InitialBlock[] = blocks.map((b) => ({
       kind: b.kind,
       body: b.body,
       url: b.url,
@@ -72,10 +65,13 @@ export default async function SopDetailPage({
         {entry.asked_by_name && (
           <p className="mb-6 text-sm text-muted-foreground">Asked by {entry.asked_by_name}</p>
         )}
-        {error && (
-          <p className="mb-4 max-w-2xl rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-        )}
+        <PageError className="mb-4 max-w-2xl" />
+        {/* The editor copies its starting content once. Keyed on that content
+            so a background refresh that brings a newer version (someone else
+            saved meanwhile) starts it afresh, while an unchanged refresh
+            leaves anything being typed alone. */}
         <SopBlockEditor
+          key={JSON.stringify([entry.title, initialBlocks])}
           publishAction={publishBound}
           publishLabel={wasPublished ? "Save changes" : "Publish"}
           draftAction={draftBound}
@@ -87,13 +83,6 @@ export default async function SopDetailPage({
       </div>
     );
   }
-
-  const { data: blocks } = await supabase
-    .from("sop_blocks")
-    .select("*")
-    .eq("entry_id", id)
-    .order("sort_order")
-    .returns<SopBlock[]>();
 
   return (
     <div>
@@ -113,7 +102,7 @@ export default async function SopDetailPage({
       )}
 
       <div className="flex max-w-2xl flex-col gap-4">
-        {(blocks ?? []).map((b) => (
+        {blocks.map((b) => (
           <div key={b.id}>
             {b.kind === "text" && <p className="whitespace-pre-wrap text-sm">{b.body}</p>}
             {b.kind === "photo" && (
@@ -139,7 +128,7 @@ export default async function SopDetailPage({
             )}
           </div>
         ))}
-        {(!blocks || blocks.length === 0) && (
+        {blocks.length === 0 && (
           <p className="text-sm text-muted-foreground">No content yet.</p>
         )}
       </div>

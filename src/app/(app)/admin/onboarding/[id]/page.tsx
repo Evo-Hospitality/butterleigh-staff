@@ -1,9 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { useParams, useSearchParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
-import { adminDocumentPrefix, documentTypeNames, documentsWithUrls } from "@/lib/onboarding/details";
 import { EmployeeDocumentPicker } from "@/components/employee-document-picker";
 import { DocumentTypeSelect } from "@/components/document-type-select";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
@@ -14,7 +15,8 @@ import { AddressInput } from "@/components/address-input";
 import { NameInput } from "@/components/name-input";
 import { HmrcStatementPicker } from "@/components/hmrc-statement-picker";
 import { hmrcStatementSummary } from "@/lib/hmrc-statement";
-import type { EmployeeDetails, EmployeeDocument, Profile } from "@/lib/types";
+import Loading from "../../../loading";
+import { usePeopleView } from "../../people-data";
 import {
   approveOnboardingAction,
   deleteEmployeeDocumentAction,
@@ -49,42 +51,13 @@ function Field({
   );
 }
 
-export default async function AdminEmployeeDetailsPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const { id } = await params;
-  const { error, saved } = await searchParams;
-
-  const { data: person } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle<Profile>();
-  if (!person) {
-    notFound();
-  }
-
-  const [{ data: details }, { data: documents }] = await Promise.all([
-    supabase.from("employee_details").select("*").eq("staff_id", id).maybeSingle<EmployeeDetails>(),
-    supabase
-      .from("employee_documents")
-      .select("*")
-      .eq("staff_id", id)
-      .order("created_at")
-      .returns<EmployeeDocument[]>(),
-  ]);
-
-  // Minted per view and short-lived — the bucket is private, so there is no
-  // URL that keeps working after this page is closed.
-  const [uploaded, typeNames] = await Promise.all([
-    documentsWithUrls(documents ?? []),
-    documentTypeNames(supabase),
-  ]);
+export default function AdminEmployeeDetailsPage() {
+  const { id } = useParams<{ id: string }>();
+  const saved = useSearchParams().get("saved");
+  const view = usePeopleView("employeeDetails", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Staff member not found.</p>;
+  if (!view.data) return <Loading />;
+  const { person, details, uploaded, typeNames, documentPrefix } = view.data;
 
   const awaitingReview = person.onboarding_status === "submitted";
 
@@ -103,7 +76,7 @@ export default async function AdminEmployeeDetailsPage({
       </p>
 
       {saved && <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">Saved.</p>}
-      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <PageError className="mb-4" />
 
       {awaitingReview && (
         <section className="mb-8 rounded-lg border border-accent bg-muted p-5">
@@ -228,7 +201,7 @@ export default async function AdminEmployeeDetailsPage({
                 document can't be read straight out of storage. */}
             <EmployeeDocumentPicker
               staffId={person.id}
-              pathPrefix={adminDocumentPrefix(person.id)}
+              pathPrefix={documentPrefix}
               label="+ Choose a file"
             />
           </div>
@@ -281,7 +254,14 @@ export default async function AdminEmployeeDetailsPage({
           Editable here — this is also how you copy an existing member of staff&apos;s details
           across from the old records.
         </p>
-        <form action={saveEmployeeDetailsAction} className="flex max-w-xl flex-col gap-4">
+        {/* Keyed on what's on file: the fields start from it, so a newer copy
+            from the background refresh redraws them instead of leaving the
+            cached values to be saved back over it. */}
+        <form
+          key={JSON.stringify(details)}
+          action={saveEmployeeDetailsAction}
+          className="flex max-w-xl flex-col gap-4"
+        >
           <input type="hidden" name="staff_id" value={person.id} />
           <div>
             <label className="mb-1 block text-sm font-medium">Full name</label>

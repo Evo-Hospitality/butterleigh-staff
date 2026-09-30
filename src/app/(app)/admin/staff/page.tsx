@@ -1,48 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
-import type { LeaveBalance, Profile } from "@/lib/types";
-import { proratedAllowance } from "@/lib/holiday/proration";
-import { StaffTables, type StaffRow } from "@/components/staff-tables";
-import { formatDate } from "@/lib/format";
+import { StaffTables } from "@/components/staff-tables";
+import Loading from "../../loading";
+import { usePeopleView } from "../people-data";
 
-// Index 0 = Sunday, matching profiles.working_days.
-const DAY_SHORT = ["Su", "M", "T", "W", "Th", "F", "Sa"];
-
-export default async function StaffListPage() {
-  const { supabase } = await requireAdmin();
-  const year = new Date().getFullYear();
-
-  const [{ data: staff }, { data: balances }] = await Promise.all([
-    supabase.from("profiles").select("*").order("full_name").returns<Profile[]>(),
-    supabase.from("leave_balances").select("*").eq("leave_year", year).returns<LeaveBalance[]>(),
-  ]);
-
-  const balanceByStaff = new Map((balances ?? []).map((b) => [b.staff_id, b]));
-  const all = staff ?? [];
-
-  const toRow = (person: Profile): StaffRow => ({
-    id: person.id,
-    fullName: person.full_name,
-    email: person.email,
-    employmentType: person.employment_type,
-    workingDays: person.working_days.map((d) => DAY_SHORT[d]).join(" "),
-    allowance:
-      person.employment_type === "salaried"
-        ? `${
-            balanceByStaff.get(person.id)?.base_allowance ??
-            (person.annual_allowance_days
-              ? proratedAllowance(person.annual_allowance_days, person.start_date, year)
-              : "—")
-          } days`
-        : "12.07% accrual",
-    manager: all.find((m) => m.id === person.manager_id)?.full_name ?? "—",
-    role: person.role,
-    invited: person.invited_at ? formatDate(person.invited_at) : "Not invited",
-  });
-
-  // No Status column — which table someone is in says it.
-  const active = all.filter((p) => p.active).map(toRow);
-  const archived = all.filter((p) => !p.active).map(toRow);
+export default function StaffListPage() {
+  const view = usePeopleView("staffList");
+  if (!view.data) return <Loading />;
+  const { active, archived } = view.data;
 
   return (
     <div>

@@ -1,30 +1,25 @@
-import { requireAdmin } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
-import { buildSocialsPayrollReport } from "@/lib/social-photos/payroll-report";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import { saveReviewerAction } from "./actions";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default async function SocialPhotosSettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ year?: string; month?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const params = await searchParams;
-
+export default function SocialPhotosSettingsPage() {
+  const params = useSearchParams();
   const now = new Date();
-  const year = Number(params.year) || now.getFullYear();
-  const month = Number(params.month) || now.getMonth() + 1;
+  const year = Number(params.get("year")) || now.getFullYear();
+  const month = Number(params.get("month")) || now.getMonth() + 1;
 
-  const [{ data: settings }, { data: staff }, rows] = await Promise.all([
-    supabase.from("settings").select("social_photos_reviewer_id").single(),
-    supabase.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>(),
-    buildSocialsPayrollReport(supabase, year, month),
-  ]);
+  const view = useSettingsView("socialPhotosSettings", { year: String(year), month: String(month) });
+  if (!view.data) return <Loading />;
+
+  const { reviewerId, staff, rows } = view.data;
 
   return (
     <div>
@@ -35,16 +30,17 @@ export default async function SocialPhotosSettingsPage({
         the month the checkmark was set.
       </p>
 
-      <form action={saveReviewerAction} className="mb-8 flex max-w-md items-end gap-3">
+      {/* Keyed by the saved value so the picker shows it after a save. */}
+      <form key={reviewerId} action={saveReviewerAction} className="mb-8 flex max-w-md items-end gap-3">
         <div className="flex-1">
           <label className="mb-1 block text-sm font-medium">Reviewer</label>
           <select
             name="social_photos_reviewer_id"
-            defaultValue={settings?.social_photos_reviewer_id ?? ""}
+            defaultValue={reviewerId}
             className="w-full rounded-md border border-border px-3 py-2 text-sm"
           >
             <option value="">Nobody set — submissions won&apos;t be emailed</option>
-            {(staff ?? []).map((s) => (
+            {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name}
               </option>

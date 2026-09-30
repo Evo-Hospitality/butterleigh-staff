@@ -84,7 +84,7 @@ export function HoursImportPanel({
   month: number;
   monthLabel: string;
   imports: ImportRow[];
-  staff: Profile[];
+  staff: Pick<Profile, "id" | "full_name">[];
   previewAction: (formData: FormData) => Promise<PreviewResult>;
   commitAction: (payload: {
     year: number;

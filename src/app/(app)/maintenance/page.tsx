@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { requireMaintenanceAccess } from "@/lib/auth";
+import Loading from "../loading";
+import { useMaintenanceView } from "./data";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { MaintenanceRequest, MaintenanceUpdateEntry } from "@/lib/types";
 import { formatDate } from "@/lib/format";
@@ -13,7 +16,7 @@ function RequestTable({
   requests: MaintenanceRequest[];
   empty: string;
   showClosedDate?: boolean;
-  latestUpdates?: Map<string, MaintenanceUpdateEntry>;
+  latestUpdates?: Record<string, MaintenanceUpdateEntry>;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-border">
@@ -33,9 +36,9 @@ function RequestTable({
                 <Link href={`/maintenance/${r.id}`} className="font-medium hover:text-accent">
                   {r.title}
                 </Link>
-                {latestUpdates?.has(r.id) && (
+                {latestUpdates?.[r.id] && (
                   <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">
-                    {latestUpdates.get(r.id)!.author_name}: {latestUpdates.get(r.id)!.note}
+                    {latestUpdates[r.id].author_name}: {latestUpdates[r.id].note}
                   </p>
                 )}
               </td>
@@ -59,38 +62,11 @@ function RequestTable({
   );
 }
 
-export default async function MaintenancePage() {
-  const { supabase } = await requireMaintenanceAccess();
+export default function MaintenancePage() {
+  const view = useMaintenanceView("list");
+  if (!view.data) return <Loading />;
 
-  const { data: requests } = await supabase
-    .from("maintenance_requests")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .returns<MaintenanceRequest[]>();
-
-  const open = (requests ?? []).filter((r) => r.status === "open");
-  const closed = (requests ?? []).filter((r) => r.status === "closed");
-
-  // Most recent log entry per open request, surfaced on the row so you can
-  // see what's happened lately without opening each one. Open only —
-  // activity on a closed request isn't what you're scanning for. Same
-  // approach as the Actions list; maintenance_updates RLS already matches
-  // maintenance_requests' visibility, so the caller's own client is fine.
-  const openIds = open.map((r) => r.id);
-  const latestUpdates = new Map<string, MaintenanceUpdateEntry>();
-  if (openIds.length > 0) {
-    const { data: updates } = await supabase
-      .from("maintenance_updates")
-      .select("*")
-      .in("request_id", openIds)
-      .order("created_at", { ascending: false })
-      .returns<MaintenanceUpdateEntry[]>();
-    for (const u of updates ?? []) {
-      if (!latestUpdates.has(u.request_id)) {
-        latestUpdates.set(u.request_id, u);
-      }
-    }
-  }
+  const { open, closed, latestUpdates } = view.data;
 
   return (
     <div>

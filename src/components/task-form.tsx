@@ -23,7 +23,8 @@ export function TaskForm({
   submitLabel,
 }: {
   action: (formData: FormData) => Promise<void>;
-  profiles: Profile[];
+  // Only the picker's names — the loader never sends whole profiles.
+  profiles: Pick<Profile, "id" | "full_name">[];
   currentUserId: string;
   task?: Task;
   submitLabel: string;

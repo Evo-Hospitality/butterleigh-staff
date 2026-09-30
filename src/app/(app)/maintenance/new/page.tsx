@@ -1,43 +1,31 @@
-import { requireMaintenanceAccess } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
-import { staffWithAppAccess } from "@/lib/access-query";
+"use client";
+
+import { useState } from "react";
+import { PageError } from "@/components/page-error";
+import Loading from "../../loading";
+import { useMaintenanceView } from "../data";
 import { SubmitButton } from "@/components/submit-button";
 import { createMaintenanceRequestAction } from "./actions";
 
-export default async function NewMaintenanceRequestPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { profile, supabase } = await requireMaintenanceAccess();
-  const { error } = await searchParams;
+export default function NewMaintenanceRequestPage() {
+  const view = useMaintenanceView("newForm");
+  // One per page visit, so both presses of one button carry the same value
+  // and the second is rejected as a duplicate server-side.
+  const [token] = useState(() => crypto.randomUUID());
+  if (!view.data) return <Loading />;
 
-  let assignees: Profile[] = [];
-  if (profile.role === "admin") {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("active", true)
-      .order("full_name")
-      .returns<Profile[]>();
-    assignees = await staffWithAppAccess(supabase, "maintenance", "manage");
-  }
+  const { isAdmin, assignees } = view.data;
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold text-primary">Report a maintenance issue</h1>
-      {error && (
-        <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError />
 
       <form
         action={createMaintenanceRequestAction}
-        encType="multipart/form-data"
         className="flex max-w-md flex-col gap-4"
       >
-        {/* Fresh per render, so both presses of one button carry the same
-            value and the second is rejected as a duplicate server-side. */}
-        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
+        <input type="hidden" name="submission_token" value={token} />
 
         <div>
           <label className="mb-1 block text-sm font-medium">Title</label>
@@ -69,7 +57,7 @@ export default async function NewMaintenanceRequestPage({
           />
         </div>
 
-        {profile.role === "admin" && (
+        {isAdmin && (
           <div>
             <label className="mb-1 block text-sm font-medium">Assign to</label>
             <select

@@ -1,15 +1,14 @@
-import { requireAdmin } from "@/lib/auth";
-import type { BankHoliday } from "@/lib/types";
+"use client";
+
 import { addBankHoliday, deleteBankHoliday } from "./actions";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
-export default async function BankHolidaysPage() {
-  const { supabase } = await requireAdmin();
+export default function BankHolidaysPage() {
+  const view = useSettingsView("bankHolidays");
+  if (!view.data) return <Loading />;
 
-  const { data: holidays } = await supabase
-    .from("bank_holidays")
-    .select("*")
-    .order("date")
-    .returns<BankHoliday[]>();
+  const { holidays } = view.data;
 
   return (
     <div>
@@ -57,7 +56,7 @@ export default async function BankHolidaysPage() {
             </tr>
           </thead>
           <tbody>
-            {holidays?.map((h) => (
+            {holidays.map((h) => (
               <tr key={h.id} className="border-t border-border">
                 <td className="px-4 py-2">{h.date}</td>
                 <td className="px-4 py-2">{h.name}</td>

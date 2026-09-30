@@ -1,13 +1,17 @@
-import { requireUser } from "@/lib/auth";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import { PageError } from "@/components/page-error";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { documentsWithUrls } from "@/lib/onboarding/details";
 import { AccountNumberInput, SortCodeInput } from "@/components/bank-inputs";
 import { PhoneInput } from "@/components/phone-input";
 import { AddressInput } from "@/components/address-input";
 import { NameInput } from "@/components/name-input";
 import { formatSortCode } from "@/lib/bank-details";
-import type { BankChangeRequest, EmployeeDetails, EmployeeDocument } from "@/lib/types";
+import Loading from "../loading";
+import { useMyDetailsView } from "./data";
 import { requestBankChangeAction, updateMyContactDetailsAction } from "./actions";
 
 function Row({ label, value }: { label: string; value: string | null }) {
@@ -49,37 +53,17 @@ function Field({
   );
 }
 
-export default async function MyDetailsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; saved?: string; bank?: string }>;
-}) {
-  const { supabase, user, profile } = await requireUser();
-  const { error, saved, bank } = await searchParams;
+export default function MyDetailsPage() {
+  const { profile } = useMe()!;
+  const searchParams = useSearchParams();
+  const saved = searchParams.get("saved");
+  const bank = searchParams.get("bank");
+  const view = useMyDetailsView("details");
+  if (!view.data) return <Loading />;
+  const { details, bankRequests, documents: myDocuments } = view.data;
 
-  const [{ data: details }, { data: bankRequests }, { data: documents }] = await Promise.all([
-    supabase.from("employee_details").select("*").eq("staff_id", user.id).maybeSingle<EmployeeDetails>(),
-    supabase
-      .from("bank_change_requests")
-      .select("*")
-      .eq("staff_id", user.id)
-      .order("requested_at", { ascending: false })
-      .limit(5)
-      .returns<BankChangeRequest[]>(),
-    // RLS already limits this to documents shared with them — anything filed
-    // as internal never reaches the query.
-    supabase
-      .from("employee_documents")
-      .select("*")
-      .eq("staff_id", user.id)
-      .order("created_at", { ascending: false })
-      .returns<EmployeeDocument[]>(),
-  ]);
-
-  const myDocuments = await documentsWithUrls(documents ?? []);
-
-  const pendingBank = (bankRequests ?? []).find((r) => r.status === "pending");
-  const decided = (bankRequests ?? []).filter((r) => r.status !== "pending");
+  const pendingBank = bankRequests.find((r) => r.status === "pending");
+  const decided = bankRequests.filter((r) => r.status !== "pending");
 
   return (
     <div>
@@ -95,7 +79,7 @@ export default async function MyDetailsPage({
           Sent. A manager will ring you to check it&apos;s really you before it takes effect.
         </p>
       )}
-      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <PageError className="mb-4" />
 
       <section className="mb-8 max-w-xl rounded-lg border border-border bg-muted p-5">
         <h2 className="mb-1 text-lg font-bold text-primary">On record</h2>
@@ -147,7 +131,21 @@ export default async function MyDetailsPage({
 
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-bold text-primary">Contact details</h2>
-        <form action={updateMyContactDetailsAction} className="flex max-w-xl flex-col gap-4">
+        {/* The boxes copy their starting values once. Keyed on those values so
+            a refresh that brings different ones (e.g. an admin edited them)
+            shows them, while an unchanged refresh leaves typing alone. */}
+        <form
+          key={JSON.stringify([
+            details?.home_address,
+            details?.mobile_phone,
+            profile.email,
+            details?.emergency_contact_name,
+            details?.emergency_contact_phone,
+            details?.emergency_contact_email,
+          ])}
+          action={updateMyContactDetailsAction}
+          className="flex max-w-xl flex-col gap-4"
+        >
           <div>
             <label className="mb-1 block text-sm font-medium">Home address</label>
             <AddressInput defaultValue={details?.home_address} />
@@ -212,7 +210,11 @@ export default async function MyDetailsPage({
             <p className="mt-1 text-xs">Requested {formatDateTime(pendingBank.requested_at)}.</p>
           </div>
         ) : (
-          <form action={requestBankChangeAction} className="flex max-w-xl flex-col gap-4">
+          <form
+            key={JSON.stringify([details?.bank_name, details?.bank_sort_code, details?.bank_account_number])}
+            action={requestBankChangeAction}
+            className="flex max-w-xl flex-col gap-4"
+          >
             <Field label="Bank name" name="bank_name" defaultValue={details?.bank_name} />
             <div>
               <label className="mb-1 block text-sm font-medium">Sort code</label>

@@ -1,5 +1,5 @@
-import { requireAdmin } from "@/lib/auth";
-import type { CheckinGroup } from "@/lib/types";
+"use client";
+
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import {
   addCheckinGroupAction,
@@ -8,21 +8,14 @@ import {
   renameCheckinGroupAction,
   setCheckinGroupActiveAction,
 } from "./actions";
+import Loading from "../../loading";
+import { useSettingsView } from "../settings-data";
 
-export default async function CheckinGroupsPage() {
-  const { supabase } = await requireAdmin();
+export default function CheckinGroupsPage() {
+  const view = useSettingsView("checkinGroups");
+  if (!view.data) return <Loading />;
 
-  const [{ data: groups }, { data: items }] = await Promise.all([
-    supabase.from("checkin_groups").select("*").order("sort_order").returns<CheckinGroup[]>(),
-    supabase.from("checkin_items").select("group_id"),
-  ]);
-
-  const itemCount = new Map<string, number>();
-  for (const i of items ?? []) {
-    itemCount.set(i.group_id, (itemCount.get(i.group_id) ?? 0) + 1);
-  }
-
-  const all = groups ?? [];
+  const { groups: all, itemCount } = view.data;
 
   return (
     <div>
@@ -63,11 +56,16 @@ export default async function CheckinGroupsPage() {
           </thead>
           <tbody>
             {all.map((g, i) => {
-              const count = itemCount.get(g.id) ?? 0;
+              const count = itemCount[g.id] ?? 0;
               return (
                 <tr key={g.id} className={`border-t border-border ${g.active ? "" : "bg-muted/50"}`}>
                   <td className="px-4 py-2">
-                    <form action={renameCheckinGroupAction.bind(null, g.id)} className="flex items-center gap-2">
+                    {/* Keyed by the saved name so a rename (here or elsewhere) shows up. */}
+                    <form
+                      key={g.name}
+                      action={renameCheckinGroupAction.bind(null, g.id)}
+                      className="flex items-center gap-2"
+                    >
                       <input
                         name="name"
                         defaultValue={g.name}

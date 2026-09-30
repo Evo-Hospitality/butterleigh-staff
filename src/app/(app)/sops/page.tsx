@@ -1,61 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { SopBlock, SopEntry } from "@/lib/types";
-import { SopSearch, type SopSearchEntry } from "@/components/sop-search";
+import { SopSearch } from "@/components/sop-search";
+import Loading from "../loading";
+import { useSopsView } from "./data";
 
-function snippetFor(blocks: SopBlock[]): string {
-  const firstText = blocks.find((b) => b.kind === "text" && b.body);
-  if (firstText?.body) return firstText.body.slice(0, 160);
-  const firstCaption = blocks.find((b) => b.caption);
-  return firstCaption?.caption?.slice(0, 160) ?? "";
-}
-
-export default async function SopsPage() {
-  const { supabase, access } = await requireUser();
-  const canManage = access("sops", "manage");
-
-  const { data: answered } = await supabase
-    .from("sop_entries")
-    .select("*")
-    .eq("status", "answered")
-    .order("title")
-    .returns<SopEntry[]>();
-  const answeredEntries = answered ?? [];
-
-  let unanswered: SopEntry[] = [];
-  let drafts: SopEntry[] = [];
-  if (canManage) {
-    const [{ data: unansweredData }, { data: draftData }] = await Promise.all([
-      supabase.from("sop_entries").select("*").eq("status", "unanswered").order("created_at").returns<SopEntry[]>(),
-      supabase.from("sop_entries").select("*").eq("status", "draft").order("created_at").returns<SopEntry[]>(),
-    ]);
-    unanswered = unansweredData ?? [];
-    drafts = draftData ?? [];
-  }
-
-  let blocksByEntry = new Map<string, SopBlock[]>();
-  if (answeredEntries.length > 0) {
-    const { data: allBlocks } = await supabase
-      .from("sop_blocks")
-      .select("*")
-      .in("entry_id", answeredEntries.map((e) => e.id))
-      .order("sort_order")
-      .returns<SopBlock[]>();
-    blocksByEntry = new Map();
-    for (const b of allBlocks ?? []) {
-      const list = blocksByEntry.get(b.entry_id) ?? [];
-      list.push(b);
-      blocksByEntry.set(b.entry_id, list);
-    }
-  }
-
-  const searchEntries: SopSearchEntry[] = answeredEntries.map((e) => {
-    const blocks = blocksByEntry.get(e.id) ?? [];
-    const searchText = [e.title, ...blocks.map((b) => b.body ?? ""), ...blocks.map((b) => b.caption ?? "")]
-      .join(" ")
-      .toLowerCase();
-    return { id: e.id, title: e.title, snippet: snippetFor(blocks), searchText };
-  });
+export default function SopsPage() {
+  const view = useSopsView("list");
+  if (!view.data) return <Loading />;
+  const { canManage, searchEntries, unanswered, drafts } = view.data;
 
   return (
     <div>

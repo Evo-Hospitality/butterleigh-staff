@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { Profile } from "@/lib/types";
 import { proratedAllowance } from "@/lib/holiday/proration";
 import { createStaffAction } from "./actions";
 import { NameInput } from "@/components/name-input";
@@ -16,7 +15,7 @@ const DAYS = [
   { value: 0, label: "Sun" },
 ];
 
-export function StaffForm({ managers }: { managers: Profile[] }) {
+export function StaffForm({ managers }: { managers: { id: string; full_name: string }[] }) {
   const [employmentType, setEmploymentType] = useState<"salaried" | "hourly">("hourly");
   const [startDate, setStartDate] = useState("");
   const [allowance, setAllowance] = useState(28);

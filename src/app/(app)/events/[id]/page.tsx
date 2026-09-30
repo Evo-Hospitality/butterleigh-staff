@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import { isManagerOrAdmin, type EventSuggestion, type EventSuggestionPhoto } from "@/lib/types";
+import { useParams } from "next/navigation";
+import { PageError } from "@/components/page-error";
+import Loading from "../../loading";
+import { useEventsView } from "../data";
 import { decideAction, deleteSuggestionAction } from "./actions";
 import { DeleteSuggestionButton } from "./delete-button";
 import { formatDate } from "@/lib/format";
@@ -16,32 +19,13 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${style}`}>{status}</span>;
 }
 
-export default async function EventSuggestionDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { id } = await params;
-  const { error } = await searchParams;
-  const { supabase, profile } = await requireUser();
+export default function EventSuggestionDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const view = useEventsView("detail", { id });
+  if (view.notFound) return <p className="text-sm text-muted-foreground">Suggestion not found.</p>;
+  if (!view.data) return <Loading />;
 
-  const [{ data: suggestion }, { data: photos }] = await Promise.all([
-    supabase.from("event_suggestions").select("*").eq("id", id).single<EventSuggestion>(),
-    supabase
-      .from("event_suggestion_photos")
-      .select("*")
-      .eq("suggestion_id", id)
-      .order("sort_order")
-      .returns<EventSuggestionPhoto[]>(),
-  ]);
-
-  if (!suggestion) {
-    notFound();
-  }
-
-  const canManage = isManagerOrAdmin(profile);
+  const { suggestion, photos, canManage, isAdmin } = view.data;
   const approveAction = decideAction.bind(null, id, "approved");
   const declineAction = decideAction.bind(null, id, "declined");
   const deleteBound = deleteSuggestionAction.bind(null, id);
@@ -60,17 +44,15 @@ export default async function EventSuggestionDetailPage({
         Suggested by {suggestion.submitted_by_name} · {formatDate(suggestion.created_at)}
       </p>
 
-      {error && (
-        <p className="mb-4 max-w-lg rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError className="mb-4 max-w-lg" />
 
       {suggestion.description && (
         <p className="mb-4 max-w-lg whitespace-pre-wrap text-sm">{suggestion.description}</p>
       )}
 
-      {(photos ?? []).length > 0 && (
+      {photos.length > 0 && (
         <div className="mb-6 flex flex-wrap gap-4">
-          {(photos ?? []).map((p) => (
+          {photos.map((p) => (
             <figure key={p.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.url} alt="" className="max-w-xs rounded-lg border border-border" />
@@ -126,7 +108,7 @@ export default async function EventSuggestionDetailPage({
         </div>
       )}
 
-      {profile.role === "admin" && (
+      {isAdmin && (
         <div className="mt-8 max-w-lg">
           <DeleteSuggestionButton title={suggestion.title} action={deleteBound} />
         </div>

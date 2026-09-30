@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import Loading from "../loading";
+import { useEventsView } from "./data";
 import type { EventSuggestion } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 
@@ -26,16 +29,11 @@ function SuggestionList({ suggestions, empty }: { suggestions: EventSuggestion[]
   );
 }
 
-export default async function EventsPage() {
-  const { supabase } = await requireUser();
+export default function EventsPage() {
+  const view = useEventsView("list");
+  if (!view.data) return <Loading />;
 
-  const { data: suggestions } = await supabase
-    .from("event_suggestions")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .returns<EventSuggestion[]>();
-
-  const all = suggestions ?? [];
+  const all = view.data.suggestions;
   const pending = all.filter((s) => s.status === "pending");
   const approved = all.filter((s) => s.status === "approved");
   const declined = all.filter((s) => s.status === "declined");

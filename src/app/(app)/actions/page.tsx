@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import { requireActionItemsAccess } from "@/lib/auth";
+import { useMe } from "@/lib/client/me";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { ActionItem, ActionItemUpdateEntry } from "@/lib/types";
+import Loading from "../loading";
+import { useActionsView } from "./data";
 import { formatDate } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
 import { moveActionToTaskAction } from "./move-actions";
@@ -15,7 +19,7 @@ function ActionTable({
   items: ActionItem[];
   empty: string;
   showClosedDate?: boolean;
-  latestUpdates?: Map<string, ActionItemUpdateEntry>;
+  latestUpdates?: Record<string, Pick<ActionItemUpdateEntry, "author_name" | "note">>;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-border">
@@ -36,9 +40,9 @@ function ActionTable({
                 <Link href={`/actions/${a.id}`} className="font-medium hover:text-accent">
                   {a.title}
                 </Link>
-                {latestUpdates?.has(a.id) && (
+                {latestUpdates?.[a.id] && (
                   <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">
-                    {latestUpdates.get(a.id)!.author_name}: {latestUpdates.get(a.id)!.note}
+                    {latestUpdates[a.id].author_name}: {latestUpdates[a.id].note}
                   </p>
                 )}
               </td>
@@ -70,38 +74,17 @@ function ActionTable({
   );
 }
 
-export default async function ActionsPage() {
-  const { supabase, user } = await requireActionItemsAccess();
+export default function ActionsPage() {
+  const { user } = useMe()!;
+  const view = useActionsView("list");
+  if (!view.data) return <Loading />;
 
-  // RLS already scopes this to Actions where the caller is the submitter,
-  // the assignee, or an admin — no further filtering needed here.
-  const { data: items } = await supabase
-    .from("action_items")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .returns<ActionItem[]>();
-
-  const open = (items ?? []).filter((a) => a.status === "open");
-  const closed = (items ?? []).filter((a) => a.status === "closed");
+  const { items, latestUpdates } = view.data;
+  const open = items.filter((a) => a.status === "open");
+  const closed = items.filter((a) => a.status === "closed");
   // Your own open Actions, pulled to the top. They stay in the full Open
   // list below too — this is a shortcut to what you owe, not a filter.
   const mine = open.filter((a) => a.assigned_to === user.id);
-
-  const openIds = open.map((a) => a.id);
-  const latestUpdates = new Map<string, ActionItemUpdateEntry>();
-  if (openIds.length > 0) {
-    const { data: updates } = await supabase
-      .from("action_item_updates")
-      .select("*")
-      .in("action_id", openIds)
-      .order("created_at", { ascending: false })
-      .returns<ActionItemUpdateEntry[]>();
-    for (const u of updates ?? []) {
-      if (!latestUpdates.has(u.action_id)) {
-        latestUpdates.set(u.action_id, u);
-      }
-    }
-  }
 
   return (
     <div>
