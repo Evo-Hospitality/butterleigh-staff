@@ -83,6 +83,9 @@ export default async function HolidayPage() {
             {pendingAmount > 0 && ` − ${pendingAmount.toFixed(2)} reserved by requests awaiting approval`}
           </p>
         )}
+        <Link href={`/holiday/statement?year=${year}`} className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+          See how this is worked out &rarr;
+        </Link>
       </div>
 
       <div className="mb-8 flex gap-3">

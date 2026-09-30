@@ -15,11 +15,97 @@ export default async function BalancesPage({
   const year = Number(params.year) || new Date().getFullYear();
 
   const [{ data: staff }, { data: balances }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("active", true).order("full_name").returns<Profile[]>(),
+    // Everyone, archived included — a leaver's holiday still has to be
+    // explained (and often paid out), so they stay visible in their own
+    // section at the bottom rather than disappearing.
+    supabase.from("profiles").select("*").order("full_name").returns<Profile[]>(),
     supabase.from("leave_balances").select("*").eq("leave_year", year).returns<LeaveBalance[]>(),
   ]);
 
   const balanceByStaff = new Map(balances?.map((b) => [b.staff_id, b]));
+  const activeStaff = (staff ?? []).filter((p) => p.active);
+  // Only leavers who actually have a position in this year — otherwise every
+  // year would list everyone who has ever left.
+  const archivedStaff = (staff ?? []).filter((p) => !p.active && balanceByStaff.has(p.id));
+
+  const renderRow = (person: Profile) => {
+    const bal = balanceByStaff.get(person.id);
+    const isSalaried = person.employment_type === "salaried";
+    const broughtForward = bal?.brought_forward ?? 0;
+    const baseAllowance = effectiveAllowance(person, bal, year);
+    const lieu = bal?.lieu_days_earned ?? 0;
+    const accruedHours = bal?.accrued_hours ?? 0;
+    const usedDays = bal?.used_days ?? 0;
+    const usedHours = bal?.used_hours ?? 0;
+    const remaining = remainingBalance(person, bal, year);
+
+    return (
+      <tr key={person.id} className="border-t border-border">
+        <td className="px-4 py-2 whitespace-nowrap">
+          <Link
+            href={`/admin/balances/${person.id}?year=${year}`}
+            className="text-primary underline decoration-border underline-offset-2 hover:decoration-accent"
+          >
+            {person.full_name}
+          </Link>
+        </td>
+        <td className="px-4 py-2">
+          <input
+            type="number"
+            step="0.1"
+            name={`brought_${person.id}`}
+            defaultValue={broughtForward}
+            className="w-24 rounded-md border border-border px-2 py-1"
+          />
+        </td>
+        <td className="px-4 py-2">
+          {isSalaried ? (
+            <>
+              <input
+                type="number"
+                step="0.1"
+                name={`allowance_${person.id}`}
+                defaultValue={baseAllowance}
+                className="w-24 rounded-md border border-border px-2 py-1"
+              />
+              {!bal && person.start_date && new Date(person.start_date).getFullYear() === year && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  pro-rated from {person.annual_allowance_days} (started {formatDateOnly(person.start_date)})
+                </p>
+              )}
+            </>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </td>
+        <td className="px-4 py-2">{isSalaried ? lieu : "—"}</td>
+        <td className="px-4 py-2">{isSalaried ? "—" : accruedHours.toFixed(2)}</td>
+        <td className="px-4 py-2">{isSalaried ? usedDays : usedHours.toFixed(2)}</td>
+        <td className="px-4 py-2 font-medium">
+          <Link href={`/admin/balances/${person.id}?year=${year}`} className="hover:text-accent">
+            {remaining.toFixed(2)} {isSalaried ? "days" : "hrs"}
+          </Link>
+        </td>
+      </tr>
+    );
+  };
+
+  const tableHead = (
+    <thead className="bg-muted text-left text-muted-foreground">
+      <tr>
+        <th className="px-4 py-2 font-medium">Staff</th>
+        {/* "Opening balance", not "brought forward" — nothing computes
+            it from last year; it's the manual starting position for
+            this leave year. (DB column stays brought_forward.) */}
+        <th className="px-4 py-2 font-medium">Opening balance</th>
+        <th className="px-4 py-2 font-medium">Allowance (salaried, days)</th>
+        <th className="px-4 py-2 font-medium">Lieu earned</th>
+        <th className="px-4 py-2 font-medium">Accrued hours</th>
+        <th className="px-4 py-2 font-medium">Used</th>
+        <th className="px-4 py-2 font-medium">Remaining</th>
+      </tr>
+    </thead>
+  );
 
   return (
     <div>
@@ -83,78 +169,30 @@ export default async function BalancesPage({
       <form action={saveBalances}>
         <input type="hidden" name="year" value={year} />
 
+        <p className="mb-2 text-xs text-muted-foreground">
+          Click a name to see how that balance was built up and spent.
+        </p>
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-muted text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 font-medium">Staff</th>
-                {/* "Opening balance", not "brought forward" — nothing computes
-                    it from last year; it's the manual starting position for
-                    this leave year. (DB column stays brought_forward.) */}
-                <th className="px-4 py-2 font-medium">Opening balance</th>
-                <th className="px-4 py-2 font-medium">Allowance (salaried, days)</th>
-                <th className="px-4 py-2 font-medium">Lieu earned</th>
-                <th className="px-4 py-2 font-medium">Accrued hours</th>
-                <th className="px-4 py-2 font-medium">Used</th>
-                <th className="px-4 py-2 font-medium">Remaining</th>
-              </tr>
-            </thead>
-            <tbody>
-              {staff?.map((person) => {
-                const bal = balanceByStaff.get(person.id);
-                const isSalaried = person.employment_type === "salaried";
-                const broughtForward = bal?.brought_forward ?? 0;
-                const baseAllowance = effectiveAllowance(person, bal, year);
-                const lieu = bal?.lieu_days_earned ?? 0;
-                const accruedHours = bal?.accrued_hours ?? 0;
-                const usedDays = bal?.used_days ?? 0;
-                const usedHours = bal?.used_hours ?? 0;
-                const remaining = remainingBalance(person, bal, year);
-
-                return (
-                  <tr key={person.id} className="border-t border-border">
-                    <td className="px-4 py-2 whitespace-nowrap">{person.full_name}</td>
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        step="0.1"
-                        name={`brought_${person.id}`}
-                        defaultValue={broughtForward}
-                        className="w-24 rounded-md border border-border px-2 py-1"
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      {isSalaried ? (
-                        <>
-                          <input
-                            type="number"
-                            step="0.1"
-                            name={`allowance_${person.id}`}
-                            defaultValue={baseAllowance}
-                            className="w-24 rounded-md border border-border px-2 py-1"
-                          />
-                          {!bal && person.start_date && new Date(person.start_date).getFullYear() === year && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              pro-rated from {person.annual_allowance_days} (started {formatDateOnly(person.start_date)})
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">{isSalaried ? lieu : "—"}</td>
-                    <td className="px-4 py-2">{isSalaried ? "—" : accruedHours.toFixed(2)}</td>
-                    <td className="px-4 py-2">{isSalaried ? usedDays : usedHours.toFixed(2)}</td>
-                    <td className="px-4 py-2 font-medium">
-                      {remaining.toFixed(2)} {isSalaried ? "days" : "hrs"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
+            {tableHead}
+            <tbody>{activeStaff.map(renderRow)}</tbody>
           </table>
         </div>
+
+        {archivedStaff.length > 0 && (
+          <>
+            <h2 className="mt-8 mb-1 text-lg font-semibold text-primary">Archived staff</h2>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Leavers with a balance in {year}. Kept separate so they don&apos;t clutter the list above.
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-border bg-muted/40">
+              <table className="w-full text-sm">
+                {tableHead}
+                <tbody>{archivedStaff.map(renderRow)}</tbody>
+              </table>
+            </div>
+          </>
+        )}
 
         <button
           type="submit"
