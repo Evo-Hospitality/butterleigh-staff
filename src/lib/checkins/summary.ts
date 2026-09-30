@@ -94,7 +94,7 @@ export async function buildCheckinSummary(
     admin
       .from("maintenance_requests")
       .select("*")
-      .eq("status", "open")
+      .neq("status", "closed")
       .order("created_at", { ascending: false })
       .returns<MaintenanceRequest[]>(),
     // Caller's own client on purpose — Actions stay private to their raiser
@@ -202,7 +202,7 @@ export async function buildCheckinSummary(
       id: r.id,
       href: `/maintenance/${r.id}`,
       label: r.title,
-      meta: `${r.assigned_to_name} · reported ${formatDate(r.created_at)}`,
+      meta: `${r.status === "in_progress" ? "In progress · " : ""}${r.assigned_to_name} · reported ${formatDate(r.created_at)}`,
     })),
 
     actions: (actions ?? []).map((a) => ({

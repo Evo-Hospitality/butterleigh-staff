@@ -6,7 +6,7 @@ import { requireAdmin, requireMaintenanceAccess } from "@/lib/auth";
 import { notifyMaintenanceUpdate, notifyMaintenanceAssigned } from "@/lib/maintenance/notifications";
 import { deleteMaintenancePhoto } from "@/lib/maintenance/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { MaintenanceRequest } from "@/lib/types";
+import type { MaintenanceRequest, MaintenanceStatus } from "@/lib/types";
 
 function fail(id: string, message: string): never {
   redirect(`/maintenance/${id}?error=${encodeURIComponent(message)}`);
@@ -98,7 +98,7 @@ export async function reassignAction(requestId: string, formData: FormData) {
   revalidatePath(`/maintenance/${requestId}`);
 }
 
-export async function setStatusAction(requestId: string, status: "open" | "closed") {
+export async function setStatusAction(requestId: string, status: MaintenanceStatus) {
   const { supabase, profile } = await requireMaintenanceAccess();
 
   const { data: request } = await supabase
@@ -120,7 +120,14 @@ export async function setStatusAction(requestId: string, status: "open" | "close
     fail(requestId, "You don't have permission to update this request.");
   }
 
-  const note = status === "closed" ? "Marked as complete" : "Reopened";
+  const note =
+    status === "closed"
+      ? "Marked as complete"
+      : status === "in_progress"
+        ? "Marked as in progress"
+        : request.status === "closed"
+          ? "Reopened"
+          : "Marked as not started";
   await supabase.from("maintenance_updates").insert({
     request_id: requestId,
     author_id: profile.id,

@@ -178,7 +178,7 @@ export type ImpersonationLogEntry = {
   ended_at: string | null;
 };
 
-export type MaintenanceStatus = "open" | "closed";
+export type MaintenanceStatus = "open" | "in_progress" | "closed";
 export type MaintenanceUpdateKind = "note" | "reassigned" | "status_changed";
 
 export type MaintenanceRequest = {

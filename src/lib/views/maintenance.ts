@@ -23,7 +23,8 @@ export const views = {
       .order("created_at", { ascending: false })
       .returns<MaintenanceRequest[]>();
 
-    const open = (requests ?? []).filter((r) => r.status === "open");
+    // In progress is still open work — it stays in the open list.
+    const open = (requests ?? []).filter((r) => r.status !== "closed");
     const closed = (requests ?? []).filter((r) => r.status === "closed");
 
     // Most recent log entry per open request, surfaced on the row so you can
@@ -86,7 +87,7 @@ export const views = {
     // Wider than canManage: whoever reported it can fix their own wording.
     // Matches edit_maintenance_request()'s check.
     const canEdit =
-      request.status === "open" &&
+      request.status !== "closed" &&
       (request.submitted_by === user.id || request.assigned_to === user.id || profile.role === "admin");
 
     let assignees: Assignee[] = [];
@@ -128,7 +129,7 @@ export const views = {
     // the real boundary.
     const canEdit =
       request.submitted_by === user.id || request.assigned_to === user.id || profile.role === "admin";
-    if (!canEdit || request.status !== "open") {
+    if (!canEdit || request.status === "closed") {
       redirect(`/maintenance/${id}`);
     }
 

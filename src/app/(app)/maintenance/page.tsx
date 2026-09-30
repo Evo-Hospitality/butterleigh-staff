@@ -6,6 +6,7 @@ import { useMaintenanceView } from "./data";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { MaintenanceRequest, MaintenanceUpdateEntry } from "@/lib/types";
 import { formatDate } from "@/lib/format";
+import { MaintenanceStatusBadge } from "@/components/maintenance-status-badge";
 
 function RequestTable({
   requests,
@@ -24,6 +25,7 @@ function RequestTable({
         <thead className="bg-muted text-left text-muted-foreground">
           <tr>
             <th className="px-4 py-2 font-medium">Title</th>
+            {!showClosedDate && <th className="px-4 py-2 font-medium">Status</th>}
             <th className="px-4 py-2 font-medium">Reported by</th>
             <th className="px-4 py-2 font-medium">Assigned to</th>
             <th className="px-4 py-2 font-medium">{showClosedDate ? "Closed" : "Reported"}</th>
@@ -42,6 +44,11 @@ function RequestTable({
                   </p>
                 )}
               </td>
+              {!showClosedDate && (
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <MaintenanceStatusBadge status={r.status} />
+                </td>
+              )}
               <td className="px-4 py-2">{r.submitted_by_name}</td>
               <td className="px-4 py-2">{r.assigned_to_name}</td>
               <td className="px-4 py-2 text-muted-foreground">
@@ -51,7 +58,7 @@ function RequestTable({
           ))}
           {requests.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">
+              <td colSpan={showClosedDate ? 4 : 5} className="px-4 py-4 text-center text-muted-foreground">
                 {empty}
               </td>
             </tr>

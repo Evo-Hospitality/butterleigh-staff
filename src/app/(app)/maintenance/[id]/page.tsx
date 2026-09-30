@@ -8,11 +8,8 @@ import { useMaintenanceView } from "../data";
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
 import { formatDateTime } from "@/lib/format";
+import { MaintenanceStatusBadge } from "@/components/maintenance-status-badge";
 
-function StatusBadge({ status }: { status: string }) {
-  const style = status === "open" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${style}`}>{status}</span>;
-}
 
 const KIND_LABEL: Record<string, string> = {
   note: "",
@@ -30,6 +27,7 @@ export default function MaintenanceDetailPage() {
 
   const closeAction = setStatusAction.bind(null, id, "closed");
   const reopenAction = setStatusAction.bind(null, id, "open");
+  const inProgressAction = setStatusAction.bind(null, id, "in_progress");
   const noteAction = addNoteAction.bind(null, id);
   const reassignBound = reassignAction.bind(null, id);
   const deleteBound = deleteRequestAction.bind(null, id);
@@ -42,7 +40,7 @@ export default function MaintenanceDetailPage() {
 
       <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold text-primary">{request.title}</h1>
-        <StatusBadge status={request.status} />
+        <MaintenanceStatusBadge status={request.status} />
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Reported by {request.submitted_by_name} · Assigned to {request.assigned_to_name}
@@ -107,12 +105,32 @@ export default function MaintenanceDetailPage() {
               </button>
             </form>
 
-            <form action={request.status === "open" ? closeAction : reopenAction}>
+            {request.status === "open" && (
+              <form action={inProgressAction}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
+                >
+                  Mark in progress
+                </button>
+              </form>
+            )}
+            {request.status === "in_progress" && (
+              <form action={reopenAction}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
+                >
+                  Back to not started
+                </button>
+              </form>
+            )}
+            <form action={request.status === "closed" ? reopenAction : closeAction}>
               <button
                 type="submit"
                 className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
               >
-                {request.status === "open" ? "Mark complete" : "Reopen"}
+                {request.status === "closed" ? "Reopen" : "Mark complete"}
               </button>
             </form>
           </div>
