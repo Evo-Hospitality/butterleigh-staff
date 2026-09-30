@@ -8,17 +8,21 @@ import Loading from "../loading";
 import { useActionsView } from "./data";
 import { formatDate } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
+import { WorkStatusBadge } from "@/components/work-status-badge";
 import { moveActionToTaskAction } from "./move-actions";
 
 function ActionTable({
   items,
   empty,
   showClosedDate,
+  showInProgress,
   latestUpdates,
 }: {
   items: ActionItem[];
   empty: string;
   showClosedDate?: boolean;
+  // Tag started ones — for "Open actions for me", which mixes both.
+  showInProgress?: boolean;
   latestUpdates?: Record<string, Pick<ActionItemUpdateEntry, "author_name" | "note">>;
 }) {
   return (
@@ -40,6 +44,11 @@ function ActionTable({
                 <Link href={`/actions/${a.id}`} className="font-medium hover:text-accent">
                   {a.title}
                 </Link>
+                {showInProgress && a.status === "in_progress" && (
+                  <span className="ml-2 align-middle">
+                    <WorkStatusBadge status={a.status} />
+                  </span>
+                )}
                 {latestUpdates?.[a.id] && (
                   <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">
                     {latestUpdates[a.id].author_name}: {latestUpdates[a.id].note}
@@ -121,7 +130,7 @@ export default function ActionsPage() {
             </span>
           </h2>
           <div className="mb-8">
-            <ActionTable items={mine} empty="Nothing assigned to you." latestUpdates={latestUpdates} />
+            <ActionTable items={mine} empty="Nothing assigned to you." latestUpdates={latestUpdates} showInProgress />
           </div>
         </>
       )}
