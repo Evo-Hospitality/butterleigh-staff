@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const year = Number(url.searchParams.get("year")) || now.getFullYear();
   const month = Number(url.searchParams.get("month")) || now.getMonth() + 1;
 
-  const rows = await buildPayrollReport(supabase, year, month);
+  const { rows } = await buildPayrollReport(supabase, year, month);
   const csv = payrollReportToCsv(rows, year, month);
 
   return new Response(csv, {

@@ -128,6 +128,12 @@ export type LeaveRequest = {
   end_date: string;
   amount: number; // days for salaried, hours for hourly
   is_unpaid: boolean; // salaried only — never touches the holiday balance
+  // Admin override of the payroll month this counts in (0043); null = the
+  // normal rule. Absent until that migration has run.
+  pay_year?: number | null;
+  pay_month?: number | null;
+  pay_period_set_by_name?: string | null;
+  pay_period_set_at?: string | null;
   status: RequestStatus;
   approver_id: string | null;
   notes: string | null;

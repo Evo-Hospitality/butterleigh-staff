@@ -214,8 +214,8 @@ export const views = {
     const { supabase } = await requireAdmin();
     const year = yearOf(yearParam);
     const month = monthOf(monthParam);
-    const rows = await buildPayrollReport(supabase, year, month);
-    return { year, month, rows };
+    const { rows, holidays } = await buildPayrollReport(supabase, year, month);
+    return { year, month, rows, holidays };
   },
 
   // /admin/maintenance-settings
