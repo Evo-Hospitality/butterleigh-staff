@@ -10,6 +10,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { del, get, set } from "idb-keyval";
 import { Toaster } from "@/components/toaster";
+import { VersionWatcher } from "@/components/version-watcher";
 
 const CACHE_KEY = "butterleigh-staff-cache";
 const WEEK = 7 * 86_400_000;
@@ -102,6 +103,7 @@ export function Providers({ children }: { children: ReactNode }) {
       }}
     >
       <ResyncAfterServerActions qc={qc} />
+      <VersionWatcher />
       {children}
       <Toaster />
     </PersistQueryClientProvider>

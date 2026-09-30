@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
+// Which deployment this browser code came from — compared against
+// /api/version so an open tab can tell a newer version has gone live (see
+// src/components/version-watcher.tsx). Same expression as that route.
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "dev";
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
+  },
   experimental: {
     // Server Actions default to a 1MB body limit — too small for a phone
     // camera photo. Maintenance photo uploads are separately capped at
