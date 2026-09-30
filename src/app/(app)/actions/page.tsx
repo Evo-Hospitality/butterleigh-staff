@@ -81,10 +81,12 @@ export default function ActionsPage() {
 
   const { items, latestUpdates } = view.data;
   const open = items.filter((a) => a.status === "open");
+  const inProgress = items.filter((a) => a.status === "in_progress");
   const closed = items.filter((a) => a.status === "closed");
-  // Your own open Actions, pulled to the top. They stay in the full Open
-  // list below too — this is a shortcut to what you owe, not a filter.
-  const mine = open.filter((a) => a.assigned_to === user.id);
+  // Everything of yours not yet closed — started or not — pulled to the
+  // top. They stay in their own sections below too; this is a shortcut to
+  // what you owe, not a filter.
+  const mine = [...open, ...inProgress].filter((a) => a.assigned_to === user.id);
 
   return (
     <div>
@@ -126,7 +128,12 @@ export default function ActionsPage() {
 
       <h2 className="mb-3 text-lg font-bold text-primary">Open</h2>
       <div className="mb-8">
-        <ActionTable items={open} empty="Nothing open right now." latestUpdates={latestUpdates} />
+        <ActionTable items={open} empty="Nothing waiting to be started." latestUpdates={latestUpdates} />
+      </div>
+
+      <h2 className="mb-3 text-lg font-bold text-primary">In progress</h2>
+      <div className="mb-8">
+        <ActionTable items={inProgress} empty="Nothing in progress." latestUpdates={latestUpdates} />
       </div>
 
       <CollapsibleSection title="Closed" count={closed.length}>

@@ -8,14 +8,11 @@ import Loading from "../../loading";
 import { useActionsView } from "../data";
 import { addNoteAction, deleteActionAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteActionButton } from "./delete-button";
+import { WorkStatusBadge } from "@/components/work-status-badge";
 import { formatDateTime } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
 import { moveActionToTaskAction } from "../move-actions";
 
-function StatusBadge({ status }: { status: string }) {
-  const style = status === "open" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${style}`}>{status}</span>;
-}
 
 const KIND_LABEL: Record<string, string> = {
   note: "",
@@ -38,7 +35,7 @@ export default function ActionDetailPage() {
   // Wider than canManage: the raiser can fix their own wording even though
   // they don't own the Action. Matches edit_action_item()'s check.
   const canEdit =
-    action.status === "open" &&
+    action.status !== "closed" &&
     (action.submitted_by === user.id || action.assigned_to === user.id || profile.role === "admin");
 
   const closeAction = setStatusAction.bind(null, id, "closed");
@@ -66,7 +63,7 @@ export default function ActionDetailPage() {
 
       <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold text-primary">{action.title}</h1>
-        <StatusBadge status={action.status} />
+        <WorkStatusBadge status={action.status} />
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Raised by {action.submitted_by_name} · Assigned to {action.assigned_to_name}
@@ -131,12 +128,32 @@ export default function ActionDetailPage() {
               </button>
             </form>
 
-            <form action={action.status === "open" ? closeAction : reopenAction}>
+            {action.status === "open" && (
+              <form action={setStatusAction.bind(null, id, "in_progress")}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
+                >
+                  Mark in progress
+                </button>
+              </form>
+            )}
+            {action.status === "in_progress" && (
+              <form action={reopenAction}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
+                >
+                  Back to not started
+                </button>
+              </form>
+            )}
+            <form action={action.status === "closed" ? reopenAction : closeAction}>
               <button
                 type="submit"
                 className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
               >
-                {action.status === "open" ? "Mark complete" : "Reopen"}
+                {action.status === "closed" ? "Reopen" : "Mark complete"}
               </button>
             </form>
           </div>

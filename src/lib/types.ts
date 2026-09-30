@@ -256,7 +256,7 @@ export type EventSuggestionPhoto = {
   created_at: string;
 };
 
-export type ActionItemStatus = "open" | "closed";
+export type ActionItemStatus = "open" | "in_progress" | "closed";
 export type ActionItemUpdateKind = "note" | "reassigned" | "status_changed";
 
 export type ActionItem = {

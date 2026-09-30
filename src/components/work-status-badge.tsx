@@ -1,5 +1,5 @@
-// Maintenance status as a coloured pill — shared by the list and a request's own page.
-export function MaintenanceStatusBadge({ status }: { status: string }) {
+// Not started / In progress / Closed as a coloured pill — Maintenance and Actions.
+export function WorkStatusBadge({ status }: { status: string }) {
   const style =
     status === "open"
       ? "bg-yellow-100 text-yellow-800"

@@ -8,7 +8,7 @@ import { useMaintenanceView } from "../data";
 import { addNoteAction, deleteRequestAction, reassignAction, setStatusAction } from "./actions";
 import { DeleteRequestButton } from "./delete-button";
 import { formatDateTime } from "@/lib/format";
-import { MaintenanceStatusBadge } from "@/components/maintenance-status-badge";
+import { WorkStatusBadge } from "@/components/work-status-badge";
 
 
 const KIND_LABEL: Record<string, string> = {
@@ -40,7 +40,7 @@ export default function MaintenanceDetailPage() {
 
       <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold text-primary">{request.title}</h1>
-        <MaintenanceStatusBadge status={request.status} />
+        <WorkStatusBadge status={request.status} />
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Reported by {request.submitted_by_name} · Assigned to {request.assigned_to_name}

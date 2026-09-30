@@ -102,7 +102,7 @@ export async function buildCheckinSummary(
     supabase
       .from("action_items")
       .select("*")
-      .eq("status", "open")
+      .neq("status", "closed")
       .order("created_at", { ascending: false })
       .returns<ActionItem[]>(),
   ]);
@@ -209,7 +209,7 @@ export async function buildCheckinSummary(
       id: a.id,
       href: `/actions/${a.id}`,
       label: a.title,
-      meta: `${a.assigned_to_name} · raised ${formatDate(a.created_at)}`,
+      meta: `${a.status === "in_progress" ? "In progress · " : ""}${a.assigned_to_name} · raised ${formatDate(a.created_at)}`,
     })),
   };
 }

@@ -36,14 +36,16 @@ export const views = {
       .returns<ActionItem[]>();
     const all = items ?? [];
 
-    // Latest update on each open Action, shown under its title.
-    const openIds = all.filter((a) => a.status === "open").map((a) => a.id);
+    // Latest update on each open or in-progress Action, shown under its
+    // title. Status changes are skipped — the section says that already.
+    const openIds = all.filter((a) => a.status !== "closed").map((a) => a.id);
     const latestUpdates: Record<string, Pick<ActionItemUpdateEntry, "author_name" | "note">> = {};
     if (openIds.length > 0) {
       const { data: updates } = await supabase
         .from("action_item_updates")
         .select("*")
         .in("action_id", openIds)
+        .neq("kind", "status_changed")
         .order("created_at", { ascending: false })
         .returns<ActionItemUpdateEntry[]>();
       for (const u of updates ?? []) {
@@ -100,7 +102,7 @@ export const views = {
 
     const canEdit =
       action.submitted_by === user.id || action.assigned_to === user.id || profile.role === "admin";
-    if (!canEdit || action.status !== "open") {
+    if (!canEdit || action.status === "closed") {
       redirect(`/actions/${id}`);
     }
 

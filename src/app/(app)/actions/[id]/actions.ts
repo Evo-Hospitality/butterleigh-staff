@@ -6,7 +6,7 @@ import { requireAdmin, requireActionItemsAccess } from "@/lib/auth";
 import { notifyActionUpdate, notifyActionAssigned } from "@/lib/action-items/notifications";
 import { deleteActionPhoto } from "@/lib/action-items/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ActionItem } from "@/lib/types";
+import type { ActionItem, ActionItemStatus } from "@/lib/types";
 
 function fail(id: string, message: string): never {
   redirect(`/actions/${id}?error=${encodeURIComponent(message)}`);
@@ -95,7 +95,7 @@ export async function reassignAction(actionId: string, formData: FormData) {
   revalidatePath(`/actions/${actionId}`);
 }
 
-export async function setStatusAction(actionId: string, status: "open" | "closed") {
+export async function setStatusAction(actionId: string, status: ActionItemStatus) {
   const { supabase, profile } = await requireActionItemsAccess();
 
   const { data: action } = await supabase
@@ -117,7 +117,14 @@ export async function setStatusAction(actionId: string, status: "open" | "closed
     fail(actionId, "You don't have permission to update this Action.");
   }
 
-  const note = status === "closed" ? "Marked as complete" : "Reopened";
+  const note =
+    status === "closed"
+      ? "Marked as complete"
+      : status === "in_progress"
+        ? "Marked as in progress"
+        : action.status === "closed"
+          ? "Reopened"
+          : "Marked as not started";
   await supabase.from("action_item_updates").insert({
     action_id: actionId,
     author_id: profile.id,
