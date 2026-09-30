@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { useRequire } from "@/lib/client/me";
+import Loading from "../loading";
 
 const TABS = [
   { href: "/admin/staff", label: "Staff" },
@@ -17,8 +20,10 @@ const TABS = [
   { href: "/admin/stock-locations", label: "Stock locations" },
 ];
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Admins only; each page's loader checks again on the server.
+  const me = useRequire((m) => m.isAdmin);
+  if (!me) return <Loading />;
 
   return (
     <div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/shell/logo";
 import { login, requestPasswordResetAction } from "./actions";
+import { ForgetCachedData } from "./forget-cached-data";
 
 export default async function LoginPage({
   searchParams,
@@ -11,6 +12,7 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-4">
+      <ForgetCachedData />
       <div className="w-full max-w-sm rounded-lg border border-border bg-background p-8 shadow-sm">
         <Logo className="mx-auto mb-4 h-24 w-24 text-primary" />
         <p className="mb-6 text-center text-sm text-muted-foreground">Staff Portal</p>

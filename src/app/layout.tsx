@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Merriweather } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/lib/client/providers";
 
 const figtree = Figtree({
   variable: "--font-figtree",
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${figtree.variable} ${merriweather.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

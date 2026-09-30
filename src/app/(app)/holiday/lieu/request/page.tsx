@@ -1,19 +1,17 @@
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+"use client";
+
+import { useState } from "react";
+import { useRequire } from "@/lib/client/me";
+import { PageError } from "@/components/page-error";
+import Loading from "../../../loading";
 import { SubmitButton } from "@/components/submit-button";
 import { requestLieuDay } from "./actions";
 
-export default async function RequestLieuDayPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { profile } = await requireUser();
-  const { error } = await searchParams;
-
-  if (profile.employment_type !== "salaried") {
-    redirect("/holiday");
-  }
+export default function RequestLieuDayPage() {
+  // Salaried only — hourly staff have no days in lieu.
+  const me = useRequire((m) => m.profile.employment_type === "salaried", "/holiday");
+  const [token] = useState(() => crypto.randomUUID());
+  if (!me) return <Loading />;
 
   return (
     <div>
@@ -23,12 +21,10 @@ export default async function RequestLieuDayPage({
         example, a bank holiday Monday when you don&apos;t usually work Mondays). Once approved, it
         adds a day to your holiday allowance for the year.
       </p>
-      {error && (
-        <p className="mb-4 max-w-md rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+      <PageError />
 
       <form action={requestLieuDay} className="flex max-w-md flex-col gap-4">
-        <input type="hidden" name="submission_token" value={crypto.randomUUID()} />
+        <input type="hidden" name="submission_token" value={token} />
         <div>
           <label className="mb-1 block text-sm font-medium">Date you worked / will work</label>
           <input

@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { LeaveBalance, LeaveRequest, LieuRequest } from "@/lib/types";
+import { useMe } from "@/lib/client/me";
+import Loading from "../loading";
+import { useHolidayView } from "./data";
 import { remainingBalance as remainingBalanceFor } from "@/lib/holiday/balance";
 import { cancelLeaveRequest, cancelLieuRequest } from "./actions";
 import { formatDateOnly } from "@/lib/format";
@@ -20,33 +23,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default async function HolidayPage() {
-  const { supabase, user, profile } = await requireUser();
-  const year = new Date().getFullYear();
-  const isSalaried = profile.employment_type === "salaried";
+export default function HolidayPage() {
+  const { profile } = useMe()!;
+  const view = useHolidayView("overview");
+  if (!view.data) return <Loading />;
 
-  const [{ data: balance }, { data: leaveRequests }, { data: lieuRequests }] = await Promise.all([
-    supabase
-      .from("leave_balances")
-      .select("*")
-      .eq("staff_id", user.id)
-      .eq("leave_year", year)
-      .maybeSingle<LeaveBalance>(),
-    supabase
-      .from("leave_requests")
-      .select("*")
-      .eq("staff_id", user.id)
-      .order("created_at", { ascending: false })
-      .returns<LeaveRequest[]>(),
-    isSalaried
-      ? supabase
-          .from("lieu_requests")
-          .select("*")
-          .eq("staff_id", user.id)
-          .order("created_at", { ascending: false })
-          .returns<LieuRequest[]>()
-      : Promise.resolve({ data: [] as LieuRequest[] }),
-  ]);
+  const { year, balance, leaveRequests, lieuRequests } = view.data;
+  const isSalaried = profile.employment_type === "salaried";
 
   // Same "pending requests reserve balance" rule request_leave() enforces
   // (0023_request_leave_rpc.sql) — shown here too so this number always

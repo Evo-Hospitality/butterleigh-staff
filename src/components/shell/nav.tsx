@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
 import type { AppKey } from "@/lib/access";
 import { signOut } from "@/app/(app)/actions";
+import { useForgetData } from "@/lib/client/providers";
 import { Logo } from "./logo";
 
 // Order matters: Overview first for anyone who has it, since it's the way
@@ -29,6 +32,9 @@ export function Nav({
   profile: Profile;
   canSee: (app: AppKey, level?: "use" | "manage") => boolean;
 }) {
+  // Signing out wipes this browser's saved copy of the data, so the next
+  // person on a shared device doesn't see it.
+  const forget = useForgetData();
   return (
     <header className="border-b border-border bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:py-6">
@@ -52,7 +58,7 @@ export function Nav({
           <Link href="/my-details" className="text-primary-foreground/70 hover:text-accent">
             {profile.full_name}
           </Link>
-          <form action={signOut}>
+          <form action={signOut} onSubmit={forget}>
             <button type="submit" className="hover:text-accent">
               Sign out
             </button>

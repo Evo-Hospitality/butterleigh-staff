@@ -1,17 +1,16 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { useSearchParams } from "next/navigation";
 import { HolidayStatement } from "@/components/holiday-statement";
+import Loading from "../../loading";
+import { useHolidayView } from "../data";
 
 // A member of staff's own holiday statement — the same view an admin gets
 // from Balances, so they can see for themselves how it adds up.
-export default async function MyHolidayStatementPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ year?: string }>;
-}) {
-  const { supabase, user } = await requireUser();
-  const sp = await searchParams;
-  const year = Number(sp.year) || new Date().getFullYear();
+export default function MyHolidayStatementPage() {
+  const year = Number(useSearchParams().get("year")) || new Date().getFullYear();
+  const view = useHolidayView("statement", { year: String(year) });
 
   return (
     <div>
@@ -19,13 +18,11 @@ export default async function MyHolidayStatementPage({
         &larr; Back to Holiday
       </Link>
       <h1 className="mt-2 mb-1 text-2xl font-bold text-primary">My holiday statement — {year}</h1>
-      <HolidayStatement
-        supabase={supabase}
-        staffId={user.id}
-        year={year}
-        yearHref={(y) => `/holiday/statement?year=${y}`}
-        self
-      />
+      {view.data ? (
+        <HolidayStatement statement={view.data} yearHref={(y) => `/holiday/statement?year=${y}`} self />
+      ) : (
+        <Loading />
+      )}
     </div>
   );
 }
