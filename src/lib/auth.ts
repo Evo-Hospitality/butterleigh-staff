@@ -15,13 +15,16 @@ import { levelFor, meets, type AccessLevel, type AppKey } from "@/lib/access";
 // load side by side rather than one after the other.
 export const requireUser = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims checks the token locally against the project's signing key
+  // rather than getUser's round trip to the Supabase auth server.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
 
-  if (!user) {
+  if (!claims) {
     redirect("/login");
   }
+
+  const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null };
 
   const [{ data: profile }, { data: grantRows }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single<Profile>(),
