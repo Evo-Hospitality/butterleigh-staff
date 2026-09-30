@@ -22,7 +22,7 @@ function shiftMonth(year: number, month: number, offset: number) {
   return { year: d.getFullYear(), month: d.getMonth() + 1 };
 }
 
-function ReportTable({ rows }: { rows: PayrollReportRow[] }) {
+function ReportTable({ rows, periodLabel }: { rows: PayrollReportRow[]; periodLabel: string }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
@@ -35,7 +35,7 @@ function ReportTable({ rows }: { rows: PayrollReportRow[] }) {
             <th className="px-4 py-2 font-medium">Holiday taken</th>
             <th className="px-4 py-2 font-medium">Unpaid leave</th>
             <th className="px-4 py-2 font-medium">Lieu earned</th>
-            <th className="px-4 py-2 font-medium">Remaining balance</th>
+            <th className="px-4 py-2 font-medium">Balance at end of {periodLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -146,7 +146,7 @@ export default function PayrollReportPage() {
 
       <PageError className="mb-4 max-w-xl" />
 
-      <ReportTable rows={activeRows} />
+      <ReportTable rows={activeRows} periodLabel={MONTH_NAMES[month - 1]} />
 
       {archivedRows.length > 0 && (
         <>
@@ -154,7 +154,7 @@ export default function PayrollReportPage() {
           <p className="mb-2 text-xs text-muted-foreground">
             Leavers with something to pay or deduct in {monthLabel(year, month)}, or holiday still on their balance.
           </p>
-          <ReportTable rows={archivedRows} />
+          <ReportTable rows={archivedRows} periodLabel={MONTH_NAMES[month - 1]} />
         </>
       )}
 

@@ -13,6 +13,10 @@ export type PayrollReportRow = {
   holidayTakenThisMonth: number; // paid holiday only — days (salaried) or hours (hourly)
   unpaidLeaveThisMonth: number; // salaried only, days — deduct pay for these, not holiday balance
   lieuEarnedThisMonth: number; // salaried only, count of days
+  // Balance at the end of this pay month, not today: holiday paid in a
+  // later month is still owed at this point, and hours from later months
+  // haven't been earned yet. For the current or a future month this is the
+  // same as today's balance.
   remainingBalance: number;
   unit: "days" | "hours";
   // Archived (left) — only listed in a month where they have something to
@@ -103,15 +107,24 @@ export async function buildPayrollReport(
   year: number,
   month: number,
 ): Promise<PayrollReport> {
-  const [{ data: staff }, { data: balances }, { data: hours }, { data: leave }, { data: lieu }] =
+  const [{ data: staff }, { data: balances }, { data: yearHours }, { data: leave }, { data: lieu }, { data: settings }] =
     await Promise.all([
       // Archived staff too — filtered below to those with something this month.
       supabase.from("profiles").select("*").order("full_name").returns<Profile[]>(),
       supabase.from("leave_balances").select("*").eq("leave_year", year).returns<LeaveBalance[]>(),
-      supabase.from("monthly_hours").select("*").eq("year", year).eq("month", month).returns<MonthlyHoursEntry[]>(),
+      // The whole year: this month's row for the report, later months' to
+      // wind the balance back to the end of this month.
+      supabase.from("monthly_hours").select("*").eq("year", year).returns<MonthlyHoursEntry[]>(),
       supabase.from("leave_requests").select("*").eq("status", "approved").returns<LeaveRequest[]>(),
       supabase.from("lieu_requests").select("*").eq("status", "approved").returns<LieuRequest[]>(),
+      supabase.from("settings").select("hourly_accrual_rate").maybeSingle<{ hourly_accrual_rate: number }>(),
     ]);
+
+  // Same rate the accrual trigger uses (settings.hourly_accrual_rate).
+  const rate = Number(settings?.hourly_accrual_rate ?? 0.1207);
+  const hours = (yearHours ?? []).filter((h) => h.month === month);
+  const isAfterThisMonth = (p: { year: number; month: number }) =>
+    p.year > year || (p.year === year && p.month > month);
 
   const balanceByStaff = new Map((balances ?? []).map((b) => [b.staff_id, b]));
   const hoursByStaff = new Map((hours ?? []).map((h) => [h.staff_id, h]));
@@ -161,14 +174,36 @@ export async function buildPayrollReport(
       (r) => r.staff_id === person.id && inMonth(r.work_date, year, month),
     ).length;
 
-    const remaining = remainingBalance(person, balance, year);
+    // Today's stored balance wound back to the end of this pay month: add
+    // back this year's holiday that's paid in a later month (still owed at
+    // this point), take off what later months' hours / lieu days earned.
+    // Starting from the stored figure keeps any manual adjustments in.
+    const paidLater = (leave ?? [])
+      .filter(
+        (r) =>
+          r.staff_id === person.id &&
+          !r.is_unpaid &&
+          new Date(r.start_date + "T00:00:00").getFullYear() === year &&
+          isAfterThisMonth(payPeriod(r, isSalaried)),
+      )
+      .reduce((sum, r) => sum + Number(r.amount), 0);
+    const earnedLater = isSalaried
+      ? (lieu ?? []).filter((r) => {
+          if (r.staff_id !== person.id) return false;
+          const d = new Date(r.work_date + "T00:00:00");
+          return d.getFullYear() === year && d.getMonth() + 1 > month;
+        }).length
+      : (yearHours ?? [])
+          .filter((h) => h.staff_id === person.id && h.month > month)
+          .reduce((sum, h) => sum + Number(h.hours_worked) * rate, 0);
+    const remaining = remainingBalance(person, balance, year) + paidLater - earnedLater;
 
     return {
       staffId: person.id,
       fullName: person.full_name,
       employmentType: person.employment_type,
       hoursWorkedThisMonth: isSalaried ? null : (hoursEntry?.hours_worked ?? 0),
-      accruedThisMonth: isSalaried ? null : (hoursEntry?.hours_worked ?? 0) * 0.1207,
+      accruedThisMonth: isSalaried ? null : (hoursEntry?.hours_worked ?? 0) * rate,
       holidayTakenThisMonth,
       unpaidLeaveThisMonth: isSalaried ? unpaidLeaveThisMonth : 0,
       lieuEarnedThisMonth: isSalaried ? lieuEarnedThisMonth : 0,
@@ -209,7 +244,7 @@ export function payrollReportToCsv(rows: PayrollReportRow[], year: number, month
     "Holiday taken this month",
     "Unpaid leave this month (days)",
     "Lieu days earned this month",
-    "Remaining balance",
+    `Balance at end of ${month}/${year}`,
     "Unit",
   ];
 
