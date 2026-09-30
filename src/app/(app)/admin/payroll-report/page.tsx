@@ -152,7 +152,7 @@ export default function PayrollReportPage() {
         <>
           <h2 className="mt-8 mb-1 text-lg font-semibold text-primary">Archived staff</h2>
           <p className="mb-2 text-xs text-muted-foreground">
-            Leavers with something to pay or deduct in {monthLabel(year, month)}.
+            Leavers with something to pay or deduct in {monthLabel(year, month)}, or holiday still on their balance.
           </p>
           <ReportTable rows={archivedRows} />
         </>

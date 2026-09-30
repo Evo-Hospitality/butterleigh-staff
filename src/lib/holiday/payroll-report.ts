@@ -16,7 +16,7 @@ export type PayrollReportRow = {
   remainingBalance: number;
   unit: "days" | "hours";
   // Archived (left) — only listed in a month where they have something to
-  // pay or deduct, so a leaver's last holiday can't drop off the report.
+  // pay or deduct, or holiday still on their balance.
   archived: boolean;
 };
 
@@ -178,11 +178,22 @@ export async function buildPayrollReport(
     } satisfies PayrollReportRow;
   });
 
-  const hasActivity = (r: PayrollReportRow) =>
-    !!r.hoursWorkedThisMonth || r.holidayTakenThisMonth > 0 || r.unpaidLeaveThisMonth > 0 || r.lieuEarnedThisMonth > 0;
+  // A leaver stays on the report while they have anything this month, or
+  // any holiday left on their balance — untaken holiday is owed to them in
+  // their final pay, so it mustn't drop out of sight just because nothing
+  // else happened that month. Once it's paid off or zeroed they drop off.
+  const needsAttention = (r: PayrollReportRow) =>
+    !!r.hoursWorkedThisMonth ||
+    r.holidayTakenThisMonth > 0 ||
+    r.unpaidLeaveThisMonth > 0 ||
+    r.lieuEarnedThisMonth > 0 ||
+    // Only a real balance for the year counts — without a leave_balances
+    // row a salaried leaver's "remaining" is just their staff-record
+    // allowance filled in by default, not holiday they're owed.
+    (balanceByStaff.has(r.staffId) && Math.abs(r.remainingBalance) >= 0.005);
 
   return {
-    rows: rows.filter((r) => !r.archived || hasActivity(r)),
+    rows: rows.filter((r) => !r.archived || needsAttention(r)),
     holidays: holidays.sort(
       (a, b) => Number(a.archived) - Number(b.archived) || a.fullName.localeCompare(b.fullName) || a.startDate.localeCompare(b.startDate),
     ),
