@@ -349,6 +349,15 @@ export type SocialPhotoPost = {
   created_at: string;
 };
 
+export type SocialPhotoComment = {
+  id: string;
+  post_id: string;
+  author_id: string | null;
+  author_name: string;
+  body: string;
+  created_at: string;
+};
+
 export type SocialPhoto = {
   id: string;
   post_id: string;

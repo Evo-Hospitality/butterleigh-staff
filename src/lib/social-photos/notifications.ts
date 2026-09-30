@@ -51,3 +51,28 @@ export async function notifyPostSubmitted(
      <p><a href="${SITE_URL}/social-photos">Review it</a></p>`,
   );
 }
+
+// One person per comment, never a group: the submitter hears when someone
+// else comments on their photos; when the submitter replies, it goes to the
+// reviewer instead (they're the one who'll have asked). Nobody is emailed
+// about their own comment.
+export async function notifyPostComment(
+  recipientId: string | null,
+  commenterId: string,
+  commenterName: string,
+  postCaption: string | null,
+  body: string,
+) {
+  if (!recipientId || recipientId === commenterId) return;
+  const email = await emailFor(recipientId);
+  if (!email) return;
+
+  const about = postCaption ? ` on “${escapeHtml(postCaption)}”` : "";
+  await send(
+    [email],
+    `${commenterName} commented on social media photos`,
+    `<p><strong>${escapeHtml(commenterName)}</strong> commented${about}:</p>
+     <blockquote>${escapeHtml(body)}</blockquote>
+     <p><a href="${SITE_URL}/social-photos">See the comment</a></p>`,
+  );
+}
