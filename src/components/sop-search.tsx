@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Pin } from "lucide-react";
 
 export type SopSearchEntry = {
   id: string;
   title: string;
   snippet: string;
   searchText: string;
+  pinnedAt?: string | null;
 };
 
-export function SopSearch({ entries }: { entries: SopSearchEntry[] }) {
+export function SopSearch({
+  entries,
+  onTogglePin,
+}: {
+  entries: SopSearchEntry[];
+  // Managers only: shows a pin button on each entry.
+  onTogglePin?: (entry: SopSearchEntry) => void;
+}) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -29,14 +38,33 @@ export function SopSearch({ entries }: { entries: SopSearchEntry[] }) {
       />
       <div className="flex flex-col gap-2">
         {filtered.map((e) => (
-          <Link
+          <div
             key={e.id}
-            href={`/sops/${e.id}`}
-            className="rounded-lg border border-border bg-background p-4 hover:border-accent"
+            className={`relative rounded-lg border bg-background hover:border-accent ${
+              e.pinnedAt ? "border-accent/60" : "border-border"
+            }`}
           >
-            <p className="font-medium text-primary">{e.title}</p>
-            {e.snippet && <p className="mt-1 text-sm text-muted-foreground">{e.snippet}</p>}
-          </Link>
+            <Link href={`/sops/${e.id}`} className={`block p-4 ${onTogglePin ? "pr-14" : ""}`}>
+              <p className="flex items-center gap-1.5 font-medium text-primary">
+                {e.pinnedAt && <Pin className="h-4 w-4 shrink-0 fill-accent text-accent" aria-label="Pinned" />}
+                {e.title}
+              </p>
+              {e.snippet && <p className="mt-1 text-sm text-muted-foreground">{e.snippet}</p>}
+            </Link>
+            {onTogglePin && (
+              <button
+                type="button"
+                onClick={() => onTogglePin(e)}
+                title={e.pinnedAt ? "Unpin" : "Pin to the top"}
+                aria-label={e.pinnedAt ? `Unpin ${e.title}` : `Pin ${e.title} to the top`}
+                className={`absolute right-3 top-3 rounded-md p-1.5 hover:bg-muted ${
+                  e.pinnedAt ? "text-accent" : "text-muted-foreground/60 hover:text-accent"
+                }`}
+              >
+                <Pin className={`h-4 w-4 ${e.pinnedAt ? "fill-accent" : ""}`} />
+              </button>
+            )}
+          </div>
         ))}
         {filtered.length === 0 && (
           <p className="text-sm text-muted-foreground">

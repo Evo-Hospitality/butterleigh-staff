@@ -218,6 +218,9 @@ export type SopEntry = {
   answered_by_name: string | null;
   created_at: string;
   answered_at: string | null;
+  // When a manager pinned it to the top of the list (0046); null if not.
+  // Absent until that migration has run.
+  pinned_at?: string | null;
 };
 
 export type SopBlock = {

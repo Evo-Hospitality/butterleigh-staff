@@ -1,12 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { SopSearch } from "@/components/sop-search";
+import { SopSearch, type SopSearchEntry } from "@/components/sop-search";
+import { patchView, useSave } from "@/lib/client/save";
+import { setPinnedAction } from "./actions";
 import Loading from "../loading";
 import { useSopsView } from "./data";
 
+type ListData = { searchEntries: SopSearchEntry[] };
+
+// Same order the loader gives: pinned first (in pin order), the rest A–Z.
+function sortEntries(entries: SopSearchEntry[]) {
+  return [...entries].sort((a, b) => {
+    if (a.pinnedAt && b.pinnedAt) return a.pinnedAt.localeCompare(b.pinnedAt);
+    if (a.pinnedAt) return -1;
+    if (b.pinnedAt) return 1;
+    return a.title.localeCompare(b.title);
+  });
+}
+
 export default function SopsPage() {
   const view = useSopsView("list");
+  const save = useSave();
   if (!view.data) return <Loading />;
   const { canManage, searchEntries, unanswered, drafts } = view.data;
 
@@ -32,7 +47,28 @@ export default function SopsPage() {
         </div>
       </div>
 
-      <SopSearch entries={searchEntries} />
+      <SopSearch
+        entries={searchEntries}
+        onTogglePin={
+          canManage
+            ? (entry) => {
+                const pinned = !entry.pinnedAt;
+                // Moves on screen straight away; put back if the save fails.
+                void save(() => setPinnedAction(entry.id, pinned), {
+                  optimistic: (qc) =>
+                    patchView<ListData>(qc, "sops", "list", (d) => ({
+                      ...d,
+                      searchEntries: sortEntries(
+                        d.searchEntries.map((e) =>
+                          e.id === entry.id ? { ...e, pinnedAt: pinned ? new Date().toISOString() : null } : e,
+                        ),
+                      ),
+                    })),
+                });
+              }
+            : undefined
+        }
+      />
 
       {canManage && (
         <div className="mt-10">

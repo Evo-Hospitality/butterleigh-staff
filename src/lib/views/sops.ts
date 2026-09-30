@@ -58,7 +58,20 @@ export const views = {
       const searchText = [e.title, ...blocks.map((b) => b.body ?? ""), ...blocks.map((b) => b.caption ?? "")]
         .join(" ")
         .toLowerCase();
-      return { id: e.id, title: e.title, snippet: snippetFor(blocks), searchText };
+      return {
+        id: e.id,
+        title: e.title,
+        snippet: snippetFor(blocks),
+        searchText,
+        pinnedAt: e.pinned_at ?? null,
+      };
+    });
+    // Pinned first, in the order they were pinned; the rest stay A–Z.
+    searchEntries.sort((a, b) => {
+      if (a.pinnedAt && b.pinnedAt) return a.pinnedAt.localeCompare(b.pinnedAt);
+      if (a.pinnedAt) return -1;
+      if (b.pinnedAt) return 1;
+      return 0;
     });
 
     const summary = (e: SopEntry): EntrySummary => ({ id: e.id, title: e.title, asked_by_name: e.asked_by_name });
