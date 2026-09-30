@@ -6,7 +6,6 @@ import { useMaintenanceView } from "./data";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import type { MaintenanceRequest, MaintenanceUpdateEntry } from "@/lib/types";
 import { formatDate } from "@/lib/format";
-import { MaintenanceStatusBadge } from "@/components/maintenance-status-badge";
 
 function RequestTable({
   requests,
@@ -25,7 +24,6 @@ function RequestTable({
         <thead className="bg-muted text-left text-muted-foreground">
           <tr>
             <th className="px-4 py-2 font-medium">Title</th>
-            {!showClosedDate && <th className="px-4 py-2 font-medium">Status</th>}
             <th className="px-4 py-2 font-medium">Reported by</th>
             <th className="px-4 py-2 font-medium">Assigned to</th>
             <th className="px-4 py-2 font-medium">{showClosedDate ? "Closed" : "Reported"}</th>
@@ -44,11 +42,6 @@ function RequestTable({
                   </p>
                 )}
               </td>
-              {!showClosedDate && (
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <MaintenanceStatusBadge status={r.status} />
-                </td>
-              )}
               <td className="px-4 py-2">{r.submitted_by_name}</td>
               <td className="px-4 py-2">{r.assigned_to_name}</td>
               <td className="px-4 py-2 text-muted-foreground">
@@ -58,7 +51,7 @@ function RequestTable({
           ))}
           {requests.length === 0 && (
             <tr>
-              <td colSpan={showClosedDate ? 4 : 5} className="px-4 py-4 text-center text-muted-foreground">
+              <td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">
                 {empty}
               </td>
             </tr>
@@ -73,7 +66,8 @@ export default function MaintenancePage() {
   const view = useMaintenanceView("list");
   if (!view.data) return <Loading />;
 
-  const { open, closed, latestUpdates } = view.data;
+  // inProgress may be missing from a copy cached before the split.
+  const { open, inProgress = [], closed, latestUpdates } = view.data;
 
   return (
     <div>
@@ -89,7 +83,12 @@ export default function MaintenancePage() {
 
       <h2 className="mb-3 text-lg font-bold text-primary">Open requests</h2>
       <div className="mb-8">
-        <RequestTable requests={open} empty="Nothing open right now." latestUpdates={latestUpdates} />
+        <RequestTable requests={open} empty="Nothing waiting to be started." latestUpdates={latestUpdates} />
+      </div>
+
+      <h2 className="mb-3 text-lg font-bold text-primary">In progress</h2>
+      <div className="mb-8">
+        <RequestTable requests={inProgress} empty="Nothing in progress." latestUpdates={latestUpdates} />
       </div>
 
       <CollapsibleSection title="Closed requests" count={closed.length}>

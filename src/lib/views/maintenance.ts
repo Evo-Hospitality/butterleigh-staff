@@ -13,7 +13,7 @@ type Assignee = Pick<Profile, "id" | "full_name">;
 const toAssignee = (p: Profile): Assignee => ({ id: p.id, full_name: p.full_name });
 
 export const views = {
-  // /maintenance — open and closed requests.
+  // /maintenance — not started, in progress and closed requests.
   list: async () => {
     const { supabase } = await requireMaintenanceAccess();
 
@@ -23,8 +23,8 @@ export const views = {
       .order("created_at", { ascending: false })
       .returns<MaintenanceRequest[]>();
 
-    // In progress is still open work — it stays in the open list.
-    const open = (requests ?? []).filter((r) => r.status !== "closed");
+    const open = (requests ?? []).filter((r) => r.status === "open");
+    const inProgress = (requests ?? []).filter((r) => r.status === "in_progress");
     const closed = (requests ?? []).filter((r) => r.status === "closed");
 
     // Most recent log entry per open request, surfaced on the row so you can
@@ -32,13 +32,17 @@ export const views = {
     // activity on a closed request isn't what you're scanning for. Same
     // approach as the Actions list; maintenance_updates RLS already matches
     // maintenance_requests' visibility, so the caller's own client is fine.
-    const openIds = open.map((r) => r.id);
+    //
+    // Status changes are skipped: the section a row sits in already says
+    // "in progress", and the note worth scanning is the last real update.
+    const openIds = [...open, ...inProgress].map((r) => r.id);
     const latestUpdates: Record<string, MaintenanceUpdateEntry> = {};
     if (openIds.length > 0) {
       const { data: updates } = await supabase
         .from("maintenance_updates")
         .select("*")
         .in("request_id", openIds)
+        .neq("kind", "status_changed")
         .order("created_at", { ascending: false })
         .returns<MaintenanceUpdateEntry[]>();
       for (const u of updates ?? []) {
@@ -48,7 +52,7 @@ export const views = {
       }
     }
 
-    return { open, closed, latestUpdates };
+    return { open, inProgress, closed, latestUpdates };
   },
 
   // /maintenance/new — admins pick who it's assigned to.
