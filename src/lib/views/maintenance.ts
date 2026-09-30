@@ -91,17 +91,10 @@ export const views = {
 
     let assignees: Assignee[] = [];
     if (canManage) {
-      // Admin client — a non-admin manager's own RLS-scoped session can't
-      // read an arbitrary other manager/admin's profile, only their own
-      // reports.
-      const admin = createAdminClient();
-      await admin
-        .from("profiles")
-        .select("*")
-        .eq("active", true)
-        .order("full_name")
-        .returns<Profile[]>();
-      assignees = (await staffWithAppAccess(supabase, "maintenance", "manage"))
+      // Admin client — a non-admin assignee's own RLS-scoped session can't
+      // read other people's profiles or access grants (only their own
+      // reports), so the list came out short for anyone but an admin.
+      assignees = (await staffWithAppAccess(createAdminClient(), "maintenance", "manage"))
         .filter((a) => a.id !== request.assigned_to)
         .map(toAssignee);
     }
