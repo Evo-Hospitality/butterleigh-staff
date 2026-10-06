@@ -32,7 +32,11 @@ export function StockTakeGrid({
   initialUnits,
   saveAction,
   addUnitAction,
+  amend = false,
 }: {
+  // Admin correcting a submitted count: one "Save changes" button, back to
+  // the stocktake afterwards.
+  amend?: boolean;
   type: StockType;
   stockTakeId: string | null;
   initialStockDate: string;
@@ -367,6 +371,26 @@ export function StockTakeGrid({
         <span className="text-lg font-bold text-primary">£{grandTotal.toFixed(2)}</span>
       </div>
 
+      {amend ? (
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => handleSave("submitted")}
+            disabled={saving !== null}
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={saving !== null}
+            className="rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-accent disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
       <div className="flex gap-3">
         <button
           type="button"
@@ -385,6 +409,7 @@ export function StockTakeGrid({
           {saving === "submitted" ? "Submitting…" : "Submit stocktake"}
         </button>
       </div>
+      )}
     </div>
   );
 }

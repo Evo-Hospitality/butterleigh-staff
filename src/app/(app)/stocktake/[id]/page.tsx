@@ -10,7 +10,7 @@ import { deleteSubmittedStockTakeAction } from "../actions";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 
 export default function StockTakeDetailPage() {
-  const { access } = useMe()!;
+  const { access, isAdmin } = useMe()!;
   const { id } = useParams<{ id: string }>();
   const view = useStocktakeView("detail", { id });
 
@@ -42,12 +42,26 @@ export default function StockTakeDetailPage() {
         >
           Download as Excel
         </a>
+        {isAdmin && (
+          <Link
+            href={`/stocktake/${id}/amend`}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-semibold text-primary hover:border-accent hover:text-accent"
+          >
+            Edit
+          </Link>
+        )}
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
         Stock as at {formatDateOnly(stockTake.stock_date)} · Submitted by {stockTake.submitted_by_name}
         {stockTake.submitted_at && <> on {formatDateTime(stockTake.submitted_at)}</>}
         {stockTake.notes && <> · {stockTake.notes}</>}
       </p>
+      {stockTake.edited_by_name && (
+        <p className="-mt-4 mb-6 text-xs text-muted-foreground">
+          Edited by {stockTake.edited_by_name}
+          {stockTake.edited_at && <> on {formatDateTime(stockTake.edited_at)}</>}
+        </p>
+      )}
 
       {groups.map(({ groupName, rows: groupRows }) => (
         <div key={groupName} className="mb-6 overflow-x-auto rounded-lg border border-border">

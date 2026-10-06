@@ -67,6 +67,47 @@ export async function saveStockTakeAction(payload: {
   return { ok: true, id: data as string };
 }
 
+// An admin correcting a submitted stocktake (admin_edit_stock_take, 0047):
+// it stays submitted under its original submitter and date, the edit is
+// noted separately, and master item prices are left alone. Same payload as
+// the grid's normal save; status is ignored.
+export async function adminEditStockTakeAction(
+  payload: Parameters<typeof saveStockTakeAction>[0],
+): Promise<SaveStockTakeResult> {
+  const { supabase } = await requireAdmin();
+
+  if (!payload.stockTakeId) {
+    return { ok: false, error: "Stocktake not found." };
+  }
+  if (!payload.stockDate) {
+    return { ok: false, error: "Pick the stocktake date." };
+  }
+  if (payload.entries.length === 0) {
+    return { ok: false, error: "Add at least one item." };
+  }
+
+  const { data, error } = await supabase.rpc("admin_edit_stock_take", {
+    p_stock_take_id: payload.stockTakeId,
+    p_stock_date: payload.stockDate,
+    p_notes: payload.notes.trim() || null,
+    p_entries: payload.entries.map((e) => ({
+      stock_item_id: e.stockItemId,
+      group_name: e.groupName,
+      name: e.name,
+      unit: e.unit.trim() || null,
+      unit_price: e.unitPrice,
+      quantities: e.quantities.map((q) => ({ location_id: q.locationId, quantity: q.quantity })),
+    })),
+  });
+
+  if (error) {
+    return { ok: false, error: error.message || "Failed to save." };
+  }
+
+  revalidatePath("/stocktake");
+  return { ok: true, id: data as string };
+}
+
 export type AddUnitResult = { ok: true; name: string } | { ok: false; error: string };
 
 // Adding a unit mid-stocktake, straight from the row's dropdown. Unlike

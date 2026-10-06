@@ -1,7 +1,7 @@
 import "server-only";
 
 import { notFound, redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
 import { buildStockTakeSheet } from "@/lib/stocktake/sheet";
 import type {
   StockItem,
@@ -146,6 +146,90 @@ export const views = {
     };
   },
 
+  // /stocktake/[id]/amend — an admin correcting a submitted count. Unlike
+  // resuming a draft, the rows come from the count's own lines (its units,
+  // prices and quantities as submitted), since the master list may have
+  // moved on since; current items it didn't include follow, blank.
+  amend: async ({ id = "" }) => {
+    const { supabase } = await requireAdmin();
+
+    const { data: stockTake } = await supabase.from("stock_takes").select("*").eq("id", id).single<StockTake>();
+    if (!stockTake) notFound();
+    if (stockTake.status === "draft") {
+      redirect(`/stocktake/${id}/edit`);
+    }
+
+    const [{ data: items }, { data: locations }, { data: entries }, { data: unitRows }] = await Promise.all([
+      supabase
+        .from("stock_items")
+        .select("*")
+        .eq("type", stockTake.type)
+        .eq("active", true)
+        .order("sort_order")
+        .returns<StockItem[]>(),
+      supabase
+        .from("stock_locations")
+        .select("*")
+        .eq("type", stockTake.type)
+        .order("sort_order")
+        .returns<StockLocation[]>(),
+      supabase.from("stock_take_entries").select("*").eq("stock_take_id", id).returns<StockTakeEntry[]>(),
+      supabase.from("stock_units").select("*").eq("type", stockTake.type).order("sort_order").returns<StockUnit[]>(),
+    ]);
+
+    const entryIds = (entries ?? []).map((e) => e.id);
+    const { data: quantities } = entryIds.length
+      ? await supabase.from("stock_take_quantities").select("*").in("stock_take_entry_id", entryIds).returns<StockTakeQuantity[]>()
+      : { data: [] as StockTakeQuantity[] };
+
+    const qtyByEntry: Record<string, Record<string, string>> = {};
+    for (const q of quantities ?? []) {
+      if (!q.location_id) continue;
+      (qtyByEntry[q.stock_take_entry_id] ??= {})[q.location_id] = String(q.quantity);
+    }
+
+    const rowFromEntry = (e: StockTakeEntry) => ({
+      key: e.stock_item_id ?? e.id,
+      stockItemId: e.stock_item_id,
+      groupName: e.group_name,
+      name: e.item_name,
+      unit: e.unit ?? "",
+      unitPrice: e.unit_price != null ? String(e.unit_price) : "",
+      quantities: qtyByEntry[e.id] ?? {},
+    });
+
+    // Master-list order, using the count's own line where it has one; then
+    // any lines whose item has since been retired from the list.
+    const entryByItem = new Map((entries ?? []).filter((e) => e.stock_item_id).map((e) => [e.stock_item_id!, e]));
+    const used = new Set<string>();
+    const rows = (items ?? []).map((item) => {
+      const e = entryByItem.get(item.id);
+      if (e) {
+        used.add(e.id);
+        return rowFromEntry(e);
+      }
+      return gridRows([item])[0];
+    });
+    for (const e of entries ?? []) {
+      if (!used.has(e.id)) rows.push(rowFromEntry(e));
+    }
+
+    return {
+      stockTake: {
+        id: stockTake.id,
+        type: stockTake.type,
+        stock_date: stockTake.stock_date,
+        notes: stockTake.notes,
+        submitted_by_name: stockTake.submitted_by_name,
+        submitted_at: stockTake.submitted_at,
+      },
+      initialRows: rows,
+      locations: (locations ?? []).map((l) => ({ id: l.id, name: l.name })),
+      knownGroups: [...new Set((items ?? []).map((i) => i.group_name))],
+      initialUnits: (unitRows ?? []).map((u) => u.name),
+    };
+  },
+
   // /stocktake/[id] — a submitted count, laid out as on the Excel export.
   detail: async ({ id = "" }) => {
     const { supabase } = await requireUser();
@@ -166,6 +250,8 @@ export const views = {
         submitted_by_name: sheet.stockTake.submitted_by_name,
         submitted_at: sheet.stockTake.submitted_at,
         notes: sheet.stockTake.notes,
+        edited_by_name: sheet.stockTake.edited_by_name ?? null,
+        edited_at: sheet.stockTake.edited_at ?? null,
       },
       locations: sheet.locations,
       // The sheet keys each row's quantities by location in a Map — flattened

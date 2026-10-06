@@ -423,6 +423,10 @@ export type StockTake = {
   created_at: string;
   updated_at: string;
   submitted_at: string | null;
+  // An admin's correction after submission (0047) — the original submitter
+  // and submitted_at are kept. Absent until that migration has run.
+  edited_by_name?: string | null;
+  edited_at?: string | null;
 };
 
 export type StockTakeEntry = {
