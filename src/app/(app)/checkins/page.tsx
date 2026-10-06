@@ -67,9 +67,18 @@ export default function CheckinsPage() {
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-primary">Overview</h1>
-        <span className="text-sm text-muted-foreground">
-          {totalOutstanding} {totalOutstanding === 1 ? "thing" : "things"} in flight
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {totalOutstanding} {totalOutstanding === 1 ? "thing" : "things"} in flight
+          </span>
+          {/* A plain link so the browser downloads the file. */}
+          <a
+            href="/checkins/report"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            Download meeting pack (Word)
+          </a>
+        </div>
       </div>
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
         The working space for the weekly management meeting. What&apos;s outstanding across the
