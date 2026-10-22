@@ -107,16 +107,18 @@ export function SocialPhotoPicker({ onPhotosChange }: { onPhotosChange?: (photos
         onClick={() => fileInputRef.current?.click()}
         className="rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium hover:border-accent"
       >
-        + Add photo
+        + Add photos
       </button>
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleFile(file);
+          // Several can be picked at once from the camera roll; each one
+          // uploads on its own, so one failure doesn't stop the rest.
+          for (const file of Array.from(e.target.files ?? [])) void handleFile(file);
           e.target.value = "";
         }}
       />
