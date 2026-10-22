@@ -7,9 +7,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // secret live in Vercel env vars; the refresh token from "Connect Dropbox"
 // lives in dropbox_connection, readable only with the service-role key.
 
-const APP_KEY = process.env.DROPBOX_APP_KEY;
-const APP_SECRET = process.env.DROPBOX_APP_SECRET;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+// Trimmed: a value pasted into Vercel can pick up a stray line break, which
+// Dropbox then rejects as an invalid client_id.
+const APP_KEY = process.env.DROPBOX_APP_KEY?.trim();
+const APP_SECRET = process.env.DROPBOX_APP_SECRET?.trim();
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
 export const DROPBOX_REDIRECT_PATH = "/api/dropbox/callback";
 export const MAX_VIDEO_BYTES = 150 * 1024 * 1024; // temporary upload links take one request up to 150MB
