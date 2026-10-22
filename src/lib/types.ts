@@ -379,6 +379,12 @@ export type SocialPhoto = {
   used_by: string | null;
   used_by_name: string | null;
   created_at: string;
+  // 0048 — a video lives in Dropbox and url is its thumbnail. Absent until
+  // that migration has run (treat as a photo).
+  kind?: "photo" | "video";
+  dropbox_path?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
 };
 
 export type StockType = "wet" | "dry";

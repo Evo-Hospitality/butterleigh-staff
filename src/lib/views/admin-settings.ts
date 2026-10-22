@@ -17,6 +17,8 @@ import type {
 } from "@/lib/types";
 import type { RolloverRow } from "@/components/rollover-form";
 import type { ImportRow, UnmatchedRow } from "@/components/hours-import-panel";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { dropboxConfigured } from "@/lib/dropbox";
 import type { ViewMap } from "./types";
 
 // The year/month screens get their period from the browser (so the page and
@@ -237,7 +239,7 @@ export const views = {
     const { supabase } = await requireAdmin();
     const year = yearOf(yearParam);
     const month = monthOf(monthParam);
-    const [{ data: settings }, { data: staff }, rows] = await Promise.all([
+    const [{ data: settings }, { data: staff }, rows, { data: dropbox }] = await Promise.all([
       supabase.from("settings").select("social_photos_reviewer_id").single(),
       supabase
         .from("profiles")
@@ -246,6 +248,12 @@ export const views = {
         .order("full_name")
         .returns<Pick<Profile, "id" | "full_name">[]>(),
       buildSocialsPayrollReport(supabase, year, month),
+      // Who connected the videos' Dropbox and when — never the token itself.
+      // Errors (0048 not run yet) just read as "not connected".
+      createAdminClient()
+        .from("dropbox_connection")
+        .select("account_name, connected_by_name, connected_at")
+        .maybeSingle<{ account_name: string | null; connected_by_name: string | null; connected_at: string }>(),
     ]);
     return {
       year,
@@ -253,6 +261,13 @@ export const views = {
       reviewerId: (settings?.social_photos_reviewer_id as string | null | undefined) ?? "",
       staff: staff ?? [],
       rows,
+      dropbox: {
+        configured: dropboxConfigured(),
+        connected: !!dropbox,
+        accountName: dropbox?.account_name ?? null,
+        connectedByName: dropbox?.connected_by_name ?? null,
+        connectedAt: dropbox?.connected_at ?? null,
+      },
     };
   },
 

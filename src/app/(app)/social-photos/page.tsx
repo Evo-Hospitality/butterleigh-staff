@@ -124,12 +124,33 @@ export default function SocialPhotosPage() {
                   return (
                     <div key={photo.id} className="w-32">
                       <div className="relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.url}
-                          alt=""
-                          className="h-32 w-32 rounded-md border border-border object-cover"
-                        />
+                        {/* A video is kept in Dropbox; this is its thumbnail,
+                            and tapping it opens the video itself. */}
+                        <a
+                          href={photo.isVideo ? `/api/social-photos/video/${photo.id}` : photo.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo.url}
+                            alt=""
+                            className="h-32 w-32 rounded-md border border-border object-cover"
+                          />
+                          {photo.isVideo && (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 pl-1 text-lg text-white">
+                                &#9654;
+                              </span>
+                            </span>
+                          )}
+                        </a>
+                        {photo.isVideo && (
+                          <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                            Video
+                          </span>
+                        )}
                         {photo.used_for_socials && (
                           <span className="absolute left-1 top-1 rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white">
                             &#10003; Used
@@ -139,7 +160,7 @@ export default function SocialPhotosPage() {
                       {canMark && (
                         <div className="mt-1 flex flex-col gap-1">
                           <a
-                            href={`${photo.url}?download`}
+                            href={photo.isVideo ? `/api/social-photos/video/${photo.id}` : `${photo.url}?download`}
                             className="block w-full rounded-md border border-border bg-white px-2 py-1 text-center text-xs font-medium hover:border-accent"
                           >
                             Download

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireUser } from "@/lib/auth";
-import { deleteSocialPhotos } from "@/lib/social-photos/photos";
+import { deleteSocialPhotos, deleteSocialVideos } from "@/lib/social-photos/photos";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPostComment } from "@/lib/social-photos/notifications";
 
@@ -30,10 +30,12 @@ export async function deletePostAction(postId: string) {
   await requireAdmin();
 
   const admin = createAdminClient();
-  const { data: photos } = await admin.from("social_photos").select("url").eq("post_id", postId);
+  // "*" rather than naming dropbox_path, so this still works before 0048.
+  const { data: photos } = await admin.from("social_photos").select("*").eq("post_id", postId);
 
   if (photos && photos.length > 0) {
     await deleteSocialPhotos(photos.map((p) => p.url));
+    await deleteSocialVideos(photos.map((p) => p.dropbox_path).filter((d): d is string => !!d));
   }
 
   const { error } = await admin.from("social_photo_posts").delete().eq("id", postId);

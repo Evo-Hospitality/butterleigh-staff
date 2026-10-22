@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { formatDateTime } from "@/lib/format";
 import { saveReviewerAction } from "./actions";
 import Loading from "../../loading";
 import { useSettingsView } from "../settings-data";
@@ -19,7 +20,9 @@ export default function SocialPhotosSettingsPage() {
   const view = useSettingsView("socialPhotosSettings", { year: String(year), month: String(month) });
   if (!view.data) return <Loading />;
 
-  const { reviewerId, staff, rows } = view.data;
+  const { reviewerId, staff, rows, dropbox } = view.data;
+  const dropboxError = params.get("dropbox_error");
+  const justConnected = params.get("dropbox") === "connected";
 
   return (
     <div>
@@ -54,6 +57,43 @@ export default function SocialPhotosSettingsPage() {
           Save
         </button>
       </form>
+
+      <div className="mb-8 max-w-xl rounded-lg border border-border p-4">
+        <h2 className="mb-1 text-lg font-bold text-primary">Videos (Dropbox)</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Videos are too big to keep in the app, so they upload straight to Dropbox (Apps → your
+          Butterleigh videos folder) and only a thumbnail is kept here. A used video earns £1, the
+          same as a photo.
+        </p>
+        {justConnected && (
+          <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">Dropbox connected.</p>
+        )}
+        {dropboxError && (
+          <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{dropboxError}</p>
+        )}
+        {!dropbox?.configured ? (
+          <p className="text-sm text-yellow-800">
+            The Dropbox app key and secret aren&apos;t set in Vercel yet, so videos can&apos;t be uploaded.
+          </p>
+        ) : dropbox.connected ? (
+          <p className="text-sm">
+            Connected{dropbox.accountName && <> to <strong>{dropbox.accountName}</strong></>}
+            {dropbox.connectedByName && <> by {dropbox.connectedByName}</>}
+            {dropbox.connectedAt && <> on {formatDateTime(dropbox.connectedAt)}</>}.{" "}
+            <a href="/api/dropbox/connect" target="_top" className="text-accent hover:underline">
+              Reconnect
+            </a>
+          </p>
+        ) : (
+          <a
+            href="/api/dropbox/connect"
+            target="_top"
+            className="inline-block rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            Connect Dropbox
+          </a>
+        )}
+      </div>
 
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-primary">

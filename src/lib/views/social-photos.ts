@@ -4,7 +4,9 @@ import { requireUser } from "@/lib/auth";
 import type { SocialPhoto, SocialPhotoComment, SocialPhotoPost } from "@/lib/types";
 import type { ViewMap } from "./types";
 
-export type SocialPhotoItem = Pick<SocialPhoto, "id" | "post_id" | "url" | "used_for_socials">;
+export type SocialPhotoItem = Pick<SocialPhoto, "id" | "post_id" | "url" | "used_for_socials"> & {
+  isVideo: boolean;
+};
 
 export const views = {
   // /social-photos — every submission with its photos and comments.
@@ -34,6 +36,7 @@ export const views = {
         post_id: photo.post_id,
         url: photo.url,
         used_for_socials: photo.used_for_socials,
+        isVideo: photo.kind === "video",
       });
     }
 
