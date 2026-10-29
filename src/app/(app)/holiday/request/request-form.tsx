@@ -84,7 +84,7 @@ export function RequestForm({ profile }: { profile: Profile }) {
           <input
             name="hours"
             type="number"
-            step="0.25"
+            step="0.01"
             min="0"
             required
             className="w-full rounded-md border border-border px-3 py-2 text-sm"

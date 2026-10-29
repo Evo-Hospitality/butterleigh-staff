@@ -343,7 +343,7 @@ export function StockTakeGrid({
                     <td key={loc.id} className="px-2 py-1.5">
                       <input
                         type="number"
-                        step="0.25"
+                        step="any"
                         min="0"
                         value={row.quantities[loc.id] ?? ""}
                         onChange={(e) => updateQuantity(row.key, loc.id, e.target.value)}

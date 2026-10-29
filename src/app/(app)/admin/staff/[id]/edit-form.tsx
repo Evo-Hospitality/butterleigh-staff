@@ -234,7 +234,7 @@ export function EditStaffForm({
         <input
           name="contracted_hours_per_week"
           type="number"
-          step="0.5"
+          step="0.01"
           defaultValue={staff.contracted_hours_per_week ?? ""}
           className="w-full rounded-md border border-border px-3 py-2 text-sm"
         />

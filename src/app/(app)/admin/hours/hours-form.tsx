@@ -39,7 +39,7 @@ export function HoursForm({
                 <td className="px-4 py-2">
                   <input
                     type="number"
-                    step="0.25"
+                    step="0.01"
                     min="0"
                     name={`hours_${person.id}`}
                     value={hours.get(person.id) ?? ""}
