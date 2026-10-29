@@ -104,7 +104,7 @@ export function RolloverForm({
                   {r.employmentType === "salaried" ? (
                     <input
                       type="number"
-                      step="0.1"
+                      step="0.01"
                       value={allowances[r.staffId] ?? ""}
                       onChange={(e) => setAllowances((a) => ({ ...a, [r.staffId]: e.target.value }))}
                       className="w-24 rounded-md border border-border px-2 py-1"

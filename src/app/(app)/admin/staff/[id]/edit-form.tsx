@@ -215,7 +215,7 @@ export function EditStaffForm({
           <input
             name="annual_allowance_days"
             type="number"
-            step="0.1"
+            step="0.01"
             value={allowance}
             onChange={(e) => setAllowance(Number(e.target.value))}
             className="w-full rounded-md border border-border px-3 py-2 text-sm"

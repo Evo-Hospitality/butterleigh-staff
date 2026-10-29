@@ -31,7 +31,7 @@ export default function BalancesPage() {
         <td className="px-4 py-2">
           <input
             type="number"
-            step="0.1"
+            step="0.01"
             name={`brought_${person.id}`}
             defaultValue={broughtForward}
             className="w-24 rounded-md border border-border px-2 py-1"
@@ -42,7 +42,7 @@ export default function BalancesPage() {
             <>
               <input
                 type="number"
-                step="0.1"
+                step="0.01"
                 name={`allowance_${person.id}`}
                 defaultValue={baseAllowance}
                 className="w-24 rounded-md border border-border px-2 py-1"
